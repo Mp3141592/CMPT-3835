@@ -2,13 +2,15 @@
 import streamlit as st
 import pandas as pd
 import joblib
+from sentence_transformers import SentenceTransformer, util
+from transformers import pipeline
 
 # Load the trained model
-model = joblib.load("client_retention_model.pkl")
+model = joblib.load("svc_model.pkl")
 
 st.title("🔄 Client Retention Predictor")
 
-page = st.radio("Choose a tab", ("Client Retention Predictor", "Feature Importance"))
+page = st.radio("Choose a tab", ("Client Retention Predictor", "Feature Importance", "Chatbot"))
 
 
 
@@ -68,4 +70,9 @@ elif page == "Feature Importance":
     image_path = "Graphs/featureimportance.png"
 
     st.image(image_path, caption="Feature Importance", use_container_width=True)
+
+
+elif page == "Chatbot":
+    st.write("Chatbot")
+
 
