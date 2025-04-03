@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
 # Load the trained model
-model = joblib.load("svc_model.pkl")
+model = joblib.load("svc_model.jlib")
 
 st.title("🔄 Client Retention Predictor")
 
