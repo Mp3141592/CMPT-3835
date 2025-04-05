@@ -1,25 +1,23 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import faiss
 from sentence_transformers import SentenceTransformer
+from sklearn.neighbors import NearestNeighbors
 
-# === Load trained XGBoost model ===
+# Load XGBoost model
 model = joblib.load("XGB_model.jlib")
 
-# === Load chatbot data and FAISS ===
+# Load chatbot chunks and build NearestNeighbors index
 @st.cache_resource
 def load_chatbot():
-    docs = pd.read_csv("chatbot_chunks.csv")  # must contain a 'chunk' column
+    df = pd.read_csv("chatbot_chunks.csv")
     embedder = SentenceTransformer('all-MiniLM-L6-v2')
-    doc_embeddings = embedder.encode(docs['chunk'].tolist(), convert_to_numpy=True)
-    index = faiss.IndexFlatL2(doc_embeddings.shape[1])
-    index.add(doc_embeddings)
-    return docs, embedder, index
+    embeddings = embedder.encode(df['chunk'].tolist(), convert_to_numpy=True)
+    nn = NearestNeighbors(n_neighbors=3, metric="cosine")
+    nn.fit(embeddings)
+    return df, embedder, nn, embeddings
 
-# === Main UI ===
 st.title("🔄 Client Retention Predictor")
 
 col1, col2 = st.columns([1, 4])
@@ -110,17 +108,17 @@ with col2:
     elif page == "Chatbot":
         st.title("🤖 Chatbot: Ask About Client Data")
 
-        docs, embedder, index = load_chatbot()
-
+        df, embedder, nn_model, embed_matrix = load_chatbot()
         user_query = st.text_input("💬 Ask your question here:")
+
         if st.button("Get Answer") and user_query:
             try:
                 query_embedding = embedder.encode([user_query])
-                D, I = index.search(np.array(query_embedding), k=3)
-                results = docs.iloc[I[0]]['chunk'].tolist()
+                distances, indices = nn_model.kneighbors([query_embedding])
+                results = df.iloc[indices[0]]['chunk'].tolist()
 
                 st.markdown("### 🧠 Top Matching Responses:")
                 for i, chunk in enumerate(results, 1):
                     st.markdown(f"**{i}.** {chunk}")
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"❌ Error while answering: {e}")
