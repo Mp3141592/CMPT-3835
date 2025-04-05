@@ -11,7 +11,7 @@ from transformers import pipeline
 # ==========================================
 @st.cache_resource
 def load_rag_components():
-    df = pd.read_csv("chatbot_chunks.csv")
+    df = pd.read_csv("chatbot_chunks_final.csv")
     embeddings = np.load("chatbot_embeddings.npy")
     embedder = SentenceTransformer("all-MiniLM-L6-v2")
     doc_embeddings = [torch.tensor(embeddings[i]) for i in range(len(df))]
