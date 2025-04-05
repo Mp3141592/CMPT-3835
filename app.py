@@ -2,53 +2,35 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import torch
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
-import torch
 
-# Load ML model
-model = joblib.load("XGB_model.jlib")
-
-# ================== Load and Embed CSV for Chatbot ==================
-@st.cache_data
-def load_csv_chunks():
-    df = pd.read_csv("finalfile.csv")
-
-    def row_to_chunk(row):
-        return (
-            f"A {int(row['age'])}-year-old {row['sex_new']} with {int(row['dependents_qty'])} dependents "
-            f"picked up in {row['Month']} during {row['Season']}. "
-            f"Distance: {row['distance_km']} km. Contact: {row['contact_method']} with {row['num_of_contact_methods']} method(s). "
-            f"Language: {row['preferred_languages']}. Status: {row['status']}. Household: {row['household']}."
-        )
-
-    df['chunk'] = df.apply(row_to_chunk, axis=1)
-    return df
-
+# ===============================
+# Load RAG Chatbot Components
+# ===============================
 @st.cache_resource
-def load_embeddings_model(df):
+def load_rag_components():
+    df = pd.read_csv("chatbot_chunks.csv")
+    embeddings = np.load("chatbot_embeddings.npy")
     embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    doc_embeddings = {
-        idx: embedder.encode(text, convert_to_tensor=True)
-        for idx, text in df['chunk'].items()
-    }
+    doc_embeddings = {i: torch.tensor(embeddings[i]) for i in range(len(df))}
     llm = pipeline("text2text-generation", model="google/flan-t5-large")
-    return embedder, doc_embeddings, llm
+    return df, embedder, doc_embeddings, llm
 
-# ================== Retrieval + Prompt ==================
-def retrieve_context(query, embedder, doc_embeddings, documents, top_k=3):
-    query_embedding = embedder.encode(query, convert_to_tensor=True)
+def retrieve_context(query, embedder, doc_embeddings, docs, top_k=3):
+    query_emb = embedder.encode(query, convert_to_tensor=True)
     scores = {
-        idx: util.pytorch_cos_sim(query_embedding, emb).item()
+        idx: util.pytorch_cos_sim(query_emb, emb).item()
         for idx, emb in doc_embeddings.items()
     }
     top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return "\n".join(f"- {documents['chunk'][idx]}" for idx, _ in top_docs)
+    return "\n".join(f"- {docs['chunk'][idx]}" for idx, _ in top_docs)
 
 def query_llm(query, context, llm):
     prompt = (
-        "You are a helpful assistant. Below are several summaries of client records.\n"
-        "Summarize the information and answer the question clearly using your own words.\n\n"
+        "You are a helpful assistant. Below are summaries of client records.\n"
+        "Summarize the information and answer the user's question clearly using your own words.\n\n"
         f"Context:\n{context}\n\n"
         f"Question: {query}\n\n"
         "Answer:"
@@ -56,37 +38,31 @@ def query_llm(query, context, llm):
     output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
     return output[0]["generated_text"].replace(prompt, "").strip()
 
-# ================== Chatbot Page ==================
-def chatbot_page_rag():
+# ===============================
+# RAG Chatbot Page
+# ===============================
+def chatbot_page():
     st.title("🤖 RAG Chatbot (from finalfile.csv)")
-    df = load_csv_chunks()
-    embedder, doc_embeddings, llm = load_embeddings_model(df)
+    with st.spinner("Loading chatbot components..."):
+        df, embedder, doc_embeddings, llm = load_rag_components()
 
     query = st.text_input("💬 Ask your question:")
     if st.button("Get Answer") and query:
-        try:
-            context = retrieve_context(query, embedder, doc_embeddings, df)
-            answer = query_llm(query, context, llm)
-            st.markdown("### 📄 Retrieved Context:")
-            st.info(context)
-            st.markdown("### 💬 Answer:")
-            st.success(answer)
-        except Exception as e:
-            st.error(f"❌ Error generating answer: {e}")
+        context = retrieve_context(query, embedder, doc_embeddings, df)
+        answer = query_llm(query, context, llm)
+        st.markdown("### 📄 Retrieved Context:")
+        st.info(context)
+        st.markdown("### 💬 Answer:")
+        st.success(answer)
 
-# ================== Sidebar Navigation ==================
-st.sidebar.title("Client Retention App")
-page = st.sidebar.radio("Select a Page", [
-    "Client Retention Predictor",
-    "Feature Analysis Graphs",
-    "Chatbot (RAG)"
-])
+# ===============================
+# Predictor Page
+# ===============================
+model = joblib.load("XGB_model.jlib")
 
-# ================== Predictor Tab ==================
-if page == "Client Retention Predictor":
+def predictor_page():
     st.title("🔄 Client Retention Predictor")
-
-    season = st.selectbox("Season of Pickup", ["Select a season", "Spring", "Summer", "Fall", "Winter"])
+    season = st.selectbox("Season of Pickup", ["Select", "Spring", "Summer", "Fall", "Winter"])
     season_months = {
         'Spring': ['March', 'April', 'May'],
         'Summer': ['June', 'July', 'August'],
@@ -94,9 +70,8 @@ if page == "Client Retention Predictor":
         'Winter': ['December', 'January', 'February']
     }
 
-    if season != "Select a season":
+    if season != "Select":
         month = st.selectbox("Month of Pickup", season_months[season])
-
         with st.form("prediction_form"):
             age = st.slider("Age", 18, 100, 35)
             dependents_qty = st.number_input("Dependents", 0, 12, 1)
@@ -136,27 +111,37 @@ if page == "Client Retention Predictor":
 
             prediction = model.predict(df_input)[0]
             probs = model.predict_proba(df_input)[0]
-            prob_return = probs[1]
-            prob_not_return = probs[0]
-
-            st.markdown("---")
-            st.subheader("Prediction:")
+            st.subheader("Prediction Result:")
             if prediction == 1:
                 st.success("✅ Client is likely to return")
             else:
                 st.warning("⚠️ Client may not return")
-            st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
-            st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
+            st.info(f"Probability of returning: {probs[1]*100:.2f}%")
+            st.info(f"Probability of not returning: {probs[0]*100:.2f}%")
     else:
         st.info("Please select a season to continue.")
 
-# ================== Feature Graph Tab ==================
-elif page == "Feature Analysis Graphs":
-    st.title("📊 Feature Analysis")
+# ===============================
+# Graphs Page
+# ===============================
+def graphs_page():
+    st.title("📊 Feature Analysis Graphs")
     st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
-    st.markdown("---")
     st.image("Graphs/waterfall.png", caption="Waterfall Plot", use_container_width=True)
 
-# ================== Chatbot Page ==================
+# ===============================
+# Main Navigation
+# ===============================
+st.sidebar.title("📂 IFSSA Client Retention App")
+page = st.sidebar.radio("Select a Page", [
+    "Client Retention Predictor",
+    "Feature Analysis Graphs",
+    "Chatbot (RAG)"
+])
+
+if page == "Client Retention Predictor":
+    predictor_page()
+elif page == "Feature Analysis Graphs":
+    graphs_page()
 elif page == "Chatbot (RAG)":
-    chatbot_page_rag()
+    chatbot_page()
