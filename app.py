@@ -1,116 +1,116 @@
+# app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
-import torch
+from datetime import datetime
 
-# Load Chatbot Components
-@st.cache_resource
-def load_rag_components():
-    df = pd.read_csv("chatbot_chunks.csv")
-    embeddings = np.load("chatbot_embeddings.npy")
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    return df, embeddings, embedder
+# Load the trained model
+model = joblib.load("XGB_model.jlib")
 
-# Retrieve context based on query
-def retrieve_context(query, embedder, doc_embeddings, top_k=5):
-    query_emb = embedder.encode(query, convert_to_tensor=True)
-    scores = {}
+st.title("🔄 Client Retention Predictor")
 
-    for idx, emb in enumerate(doc_embeddings):
-        score = util.pytorch_cos_sim(query_emb, emb).item()
-        scores[idx] = score
+col1, col2 = st.columns([1, 4])  # Adjust the width ratio as needed
 
-    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    context = "\n".join([docs['chunk'].iloc[idx] for idx, _ in top_docs])
-    return context
+# Place the radio buttons in the first column
+with col1:
+    page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
 
-# Query FLAN-T5 for Text Generation
-def query_llm(query, context, llm):
-    prompt = f"Context: {context}\n\nQuestion: {query}\nAnswer:"
-    output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
-    return output[0]['generated_text'].strip()
+# Use the second column to display the content based on the selection
+with col2:
 
-# Chatbot Function (RAG + FLAN-T5)
-def chatbot_page():
-    st.subheader("🧠 Chatbot (Data Q&A)")
-    user_input = st.text_input("Ask your question:")
-
-    if user_input:
-        with st.spinner("Thinking..."):
-            df, embeddings, embedder = load_rag_components()
-            llm = pipeline("text2text-generation", model="google/flan-t5-large")
-
-            context = retrieve_context(user_input, embedder, embeddings)  # Retrieve relevant context
-            answer = query_llm(user_input, context, llm)  # Generate answer
-
-            st.write("Retrieved Context:")
-            st.write(context)
-
-            st.write("Answer:")
-            st.write(answer)
-
-# Model Prediction (Client Retention Prediction)
-def predictor_page():
-    st.subheader("🧠 Client Prediction")
-
-    # Load the model (ensure XGB_model.jlib is in the same directory)
-    model = joblib.load("XGB_model.jlib")
-
-    # Define input fields for user to interact with (Make sure this matches your input features)
-    household = st.selectbox("Does the client have a household?", ['Yes', 'No'])
-    sex = st.selectbox("Sex of client", ['Male', 'Female'])
-    dependents_qty = st.slider("Number of Dependents", min_value=0, max_value=10, value=3)
-    distance_km = st.slider("Distance to Pickup (in km)", min_value=1, max_value=50, value=7)
-
-    # Ensure input is properly processed
-    df_input = pd.DataFrame({
-        'household_yes': [1 if household == 'Yes' else 0],
-        'sex_newMale': [1 if sex == 'Male' else 0],
-        'dependents_qty': [dependents_qty],
-        'distance': [distance_km],
-    })
-
-    # Debugging line: Check the input DataFrame
-    st.write("Data input to model:")
-    st.write(df_input)
-
-    try:
-        prediction = model.predict(df_input)[0]  # Get prediction
-        prob = model.predict_proba(df_input)[0]  # Get probabilities
-
-        st.subheader("Prediction Result:")
-        if prediction == 1:
-            st.success("Client is likely to return")
-        else:
-            st.warning("Client may not return")
+    if page == "Client Retention Predictor":
         
-        st.info(f"Probability of returning: {prob[1]*100:.2f}%")
-        st.info(f"Probability of not returning: {prob[0]*100:.2f}%")
-    except Exception as e:
-        st.error(f"Error in prediction: {e}")
+        st.write("Predict whether a client is likely to return based on their profile.")
 
-# Graphs Page (Optional: Graphs and Analysis)
-def graphs_page():
-    st.subheader("📊 Feature Analysis Graphs")
-    st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
-    st.image("Graphs/waterfall.png", caption="SNAP Waterfall Plot", use_container_width=True)
+        # Step 1: Ask for Season first
+        season = st.selectbox("Season of Pickup", ["Select a season", "Spring", "Summer", "Fall", "Winter"])
 
-# Main Function
-def main():
-    st.title("Client Retention Predictor")
+        # Dictionary of season to months
+        season_months = {
+            'Spring': ['March', 'April', 'May'],
+            'Summer': ['June', 'July', 'August'],
+            'Fall': ['September', 'October', 'November'],
+            'Winter': ['December', 'January', 'February']
+        }
 
-    # Add a selectbox for navigation
-    page = st.sidebar.selectbox("Select Page", ["Client Prediction", "Chatbot (Data Q&A)", "Feature Analysis Graphs"])
+        # Only show the month selection once a valid season is selected
+        if season != "Select a season":
+            month = st.selectbox("Month of Pickup", season_months[season])
 
-    if page == "Client Prediction":
-        predictor_page()
-    elif page == "Chatbot (Data Q&A)":
-        chatbot_page()
+            # Then show the rest of the form
+            with st.form("prediction_form"):
+                age = st.slider("Age", 18, 100, 35)
+                dependents_qty = st.number_input("Number of Dependents", 0, 12, 1)
+                distance_km = st.number_input("Distance to Location (km)", 0.0, 210.0, 5.0)
+                num_of_contact_methods = st.slider("Number of Contact Methods", 1, 5, 2)
+                household = st.selectbox("Has a household", ['Yes', 'No'])
+                sex = st.selectbox("Gender of Client", ['Male', 'Female'])
+                status = st.selectbox("Current Status", ['Active', 'Closed', 'Pending', 'Outreach', 'Flagged'])
+                latest_lang_english = st.selectbox("Latest Language is English", ['Yes', 'No'])
+                submitted = st.form_submit_button("Predict")
+
+            if submitted:
+                d = {
+                    'age': [age],
+                    'dependents_qty': [dependents_qty],
+                    'distance_km': [distance_km],
+                    'num_of_contact_methods': [num_of_contact_methods]
+                }
+
+                new_data = pd.DataFrame(d)
+
+                # One-hot encodings
+                new_data["household_yes"] = 1 if household == "Yes" else 0
+                new_data["sex_new_Male"] = 1 if sex == "Male" else 0
+
+                status_list = ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']
+                for i in status_list:
+                    new_data[i] = 1 if i == f"status_{status}" else 0
+
+                new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
+
+                season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
+                for i in season_list:
+                    new_data[i] = 1 if i == f"Season_{season}" else 0
+
+                month_list = [
+                    'Month_April', 'Month_August', 'Month_December', 'Month_Febuary', 'Month_January',
+                    'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
+                    'Month_October', 'Month_September'
+                ]
+                for i in month_list:
+                    new_data[i] = 1 if i == f"Month_{month}" else 0
+
+                # Predict
+                prediction = model.predict(new_data)[0]
+                probs = model.predict_proba(new_data)[0]
+                prob_return = probs[1]
+                prob_not_return = probs[0]
+
+                st.markdown("---")
+                st.subheader("Prediction Result:")
+                if prediction == 1:
+                    st.success("✅ Client is likely to return")
+                else:
+                    st.warning("⚠️ Client may not return")
+
+                st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
+                st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
+
+        else:
+            st.info("Please select a season to continue.")
+
     elif page == "Feature Analysis Graphs":
-        graphs_page()
+        st.write('Feature Importance Plot')
+        image_path = "Graphs/fiupdate.png"
+        st.image(image_path, caption="Feature Importance", use_container_width=True)
 
-if __name__ == "__main__":
-    main()
+        st.write("---")
+        st.write("Waterfall Prediction Graph")
+        image_path2 = "Graphs/waterfall.png"
+        st.image(image_path2, caption="Waterfall Graph", use_container_width=True)
+
+    elif page == "Chatbot":
+        st.title("Chatbot")
