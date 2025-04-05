@@ -2,123 +2,80 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-from sentence_transformers import SentenceTransformer
-from sklearn.neighbors import NearestNeighbors
+from sentence_transformers import SentenceTransformer, util
+from transformers import pipeline
+import torch
 
-# Load XGBoost model
+# ========== Load XGBoost Model ==========
 model = joblib.load("XGB_model.jlib")
 
-# Load chatbot chunks and build NearestNeighbors index
+# ========== Load and Embed Chunks from finalfile.csv ==========
 @st.cache_resource
-def load_chatbot():
-    df = pd.read_csv("chatbot_chunks.csv")
-    embedder = SentenceTransformer('all-MiniLM-L6-v2')
-    embeddings = embedder.encode(df['chunk'].tolist(), convert_to_numpy=True)
-    nn = NearestNeighbors(n_neighbors=3, metric="cosine")
-    nn.fit(embeddings)
-    return df, embedder, nn, embeddings
+def load_rag_components():
+    df = pd.read_csv("finalfile.csv")
 
-st.title("🔄 Client Retention Predictor")
+    # Build a natural language chunk from each row
+    def row_to_chunk(row):
+        return (
+            f"A {int(row['age'])}-year-old {row['sex_new']} with {int(row['dependents_qty'])} dependents "
+            f"picked up in {row['Month']} during {row['Season']}. "
+            f"Distance: {row['distance_km']} km. Contact: {row['contact_method']} with {row['num_of_contact_methods']} method(s). "
+            f"Language: {row['preferred_languages']}. Status: {row['status']}. Household: {row['household']}."
+        )
 
-col1, col2 = st.columns([1, 4])
+    df['chunk'] = df.apply(row_to_chunk, axis=1)
 
-with col1:
-    page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
+    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    doc_embeddings = {
+        idx: embedder.encode(text, convert_to_tensor=True)
+        for idx, text in df['chunk'].items()
+    }
 
-with col2:
-    if page == "Client Retention Predictor":
-        st.write("Predict whether a client is likely to return based on their profile.")
+    llm = pipeline("text2text-generation", model="google/flan-t5-large")
+    return df, embedder, doc_embeddings, llm
 
-        season = st.selectbox("Season of Pickup", ["Select a season", "Spring", "Summer", "Fall", "Winter"])
-        season_months = {
-            'Spring': ['March', 'April', 'May'],
-            'Summer': ['June', 'July', 'August'],
-            'Fall': ['September', 'October', 'November'],
-            'Winter': ['December', 'January', 'February']
-        }
+# ========== RAG Chatbot Logic ==========
+def retrieve_context(query, embedder, doc_embeddings, documents, top_k=2):
+    query_embedding = embedder.encode(query, convert_to_tensor=True)
+    scores = {
+        idx: util.pytorch_cos_sim(query_embedding, emb).item()
+        for idx, emb in doc_embeddings.items()
+    }
+    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    return "\n\n".join(documents['chunk'][idx] for idx, _ in top_docs)
 
-        if season != "Select a season":
-            month = st.selectbox("Month of Pickup", season_months[season])
+def query_llm(query, context, llm):
+    prompt = (
+        "You have some background info and client summaries below.\n\n"
+        f"Context:\n{context}\n\n"
+        f"User Query: {query}\n\nAnswer:"
+    )
+    output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
+    return output[0]["generated_text"].replace(prompt, "").strip()
 
-            with st.form("prediction_form"):
-                age = st.slider("Age", 18, 100, 35)
-                dependents_qty = st.number_input("Number of Dependents", 0, 12, 1)
-                distance_km = st.number_input("Distance to Location (km)", 0.0, 210.0, 5.0)
-                num_of_contact_methods = st.slider("Number of Contact Methods", 1, 5, 2)
-                household = st.selectbox("Has a household", ['Yes', 'No'])
-                sex = st.selectbox("Gender of Client", ['Male', 'Female'])
-                status = st.selectbox("Current Status", ['Active', 'Closed', 'Pending', 'Outreach', 'Flagged'])
-                latest_lang_english = st.selectbox("Latest Language is English", ['Yes', 'No'])
-                submitted = st.form_submit_button("Predict")
+# ========== RAG Chatbot Page ==========
+def chatbot_page_rag():
+    st.title("🤖 RAG-Powered Chatbot (from CSV)")
+    df, embedder, doc_embeddings, llm = load_rag_components()
 
-            if submitted:
-                d = {
-                    'age': [age],
-                    'dependents_qty': [dependents_qty],
-                    'distance_km': [distance_km],
-                    'num_of_contact_methods': [num_of_contact_methods]
-                }
+    query = st.text_input("💬 Ask your question:")
+    if st.button("Get Answer") and query:
+        try:
+            context = retrieve_context(query, embedder, doc_embeddings, df)
+            answer = query_llm(query, context, llm)
 
-                new_data = pd.DataFrame(d)
-                new_data["household_yes"] = 1 if household == "Yes" else 0
-                new_data["sex_new_Male"] = 1 if sex == "Male" else 0
+            st.markdown("### 📄 Retrieved Context:")
+            st.info(context)
+            st.markdown("### 💬 Chatbot Answer:")
+            st.success(answer)
+        except Exception as e:
+            st.error(f"❌ Error generating answer: {e}")
 
-                status_list = ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']
-                for i in status_list:
-                    new_data[i] = 1 if i == f"status_{status}" else 0
+# ========== App Navigation ==========
+st.sidebar.title("Client Retention App")
+page = st.sidebar.radio("Select a Page", [
+    "Chatbot (RAG)"
+])
 
-                new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
-
-                season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
-                for i in season_list:
-                    new_data[i] = 1 if i == f"Season_{season}" else 0
-
-                month_list = [
-                    'Month_April', 'Month_August', 'Month_December', 'Month_Febuary', 'Month_January',
-                    'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
-                    'Month_October', 'Month_September'
-                ]
-                for i in month_list:
-                    new_data[i] = 1 if i == f"Month_{month}" else 0
-
-                prediction = model.predict(new_data)[0]
-                probs = model.predict_proba(new_data)[0]
-                prob_return = probs[1]
-                prob_not_return = probs[0]
-
-                st.markdown("---")
-                st.subheader("Prediction Result:")
-                if prediction == 1:
-                    st.success("✅ Client is likely to return")
-                else:
-                    st.warning("⚠️ Client may not return")
-
-                st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
-                st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
-        else:
-            st.info("Please select a season to continue.")
-
-    elif page == "Feature Analysis Graphs":
-        st.write('Feature Importance Plot')
-        st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
-        st.write("---")
-        st.write("Waterfall Prediction Graph")
-        st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
-
-    elif page == "Chatbot":
-        st.title("🤖 Chatbot: Ask About Client Data")
-
-        df, embedder, nn_model, embed_matrix = load_chatbot()
-        user_query = st.text_input("💬 Ask your question here:")
-
-        if st.button("Get Answer") and user_query:
-            try:
-                query_embedding = embedder.encode([user_query])
-                distances, indices = nn_model.kneighbors([query_embedding])
-                results = df.iloc[indices[0]]['chunk'].tolist()
-
-                st.markdown("### 🧠 Top Matching Responses:")
-                for i, chunk in enumerate(results, 1):
-                    st.markdown(f"**{i}.** {chunk}")
-            except Exception as e:
-                st.error(f"❌ Error while answering: {e}")
+if page == "Chatbot (RAG)":
+    chatbot_page_rag()
