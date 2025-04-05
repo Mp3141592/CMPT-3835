@@ -18,6 +18,9 @@ def load_rag_components():
     llm = pipeline("text2text-generation", model="google/flan-t5-large")
     return df, embedder, doc_embeddings, llm
 
+# ==========================================
+# Retrieve Context for Chatbot
+# ==========================================
 def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
     query_emb = embedder.encode(query, convert_to_tensor=True)
     scores = {}
@@ -27,6 +30,9 @@ def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
     top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
     return "\n- ".join([f"- {docs['chunk'].iloc[idx]}" for idx, _ in top_docs])
 
+# ==========================================
+# Query FLAN-T5 for Text Generation
+# ==========================================
 def query_llm(query, context, llm):
     prompt = (
         "Below are summaries of client data records.\n"
@@ -40,7 +46,7 @@ def query_llm(query, context, llm):
     return output[0]['generated_text'].replace(prompt, "").strip()
 
 # ==========================================
-# Retention Prediction Page
+# Client Retention Prediction Page
 # ==========================================
 def predictor_page():
     model = joblib.load("XGB_model.jlib")
