@@ -61,6 +61,7 @@ with col2:
 
                 new_data = pd.DataFrame(d)
 
+                # One-hot encodings
                 new_data["household_yes"] = 1 if household == "Yes" else 0
                 new_data["sex_new_Male"] = 1 if sex == "Male" else 0
 
@@ -82,27 +83,32 @@ with col2:
                 for i in month_list:
                     new_data[i] = 1 if i == f"Month_{month}" else 0
 
+                # Predict
                 prediction = model.predict(new_data)[0]
+                probs = model.predict_proba(new_data)[0]
+                prob_return = probs[1]
+                prob_not_return = probs[0]
 
                 st.markdown("---")
                 st.subheader("Prediction Result:")
                 if prediction == 1:
-                    st.success(f"✅ Client is likely to return")
+                    st.success("✅ Client is likely to return")
                 else:
-                    st.warning(f"⚠️ Client may not return")
+                    st.warning("⚠️ Client may not return")
+
+                st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
+                st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
 
         else:
             st.info("Please select a season to continue.")
 
     elif page == "Feature Analysis Graphs":
         st.write('Feature Importance Plot')
-
         image_path = "Graphs/fiupdate.png"
         st.image(image_path, caption="Feature Importance", use_container_width=True)
 
         st.write("---")
         st.write("Waterfall Prediction Graph")
-
         image_path2 = "Graphs/waterfall.png"
         st.image(image_path2, caption="Waterfall Graph", use_container_width=True)
 
