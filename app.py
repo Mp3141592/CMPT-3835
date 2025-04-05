@@ -1,34 +1,33 @@
 # app.py
 import streamlit as st
 import pandas as pd
-import joblib
-from sentence_transformers import SentenceTransformer
-from datetime import datetime
-import faiss
 import numpy as np
+import joblib
+import faiss
+from sentence_transformers import SentenceTransformer
 
-# Load the trained prediction model
+# === Load trained XGBoost model ===
 model = joblib.load("XGB_model.jlib")
 
-# Chatbot embedding loader (for RAG)
+# === Load chatbot data and FAISS ===
 @st.cache_resource
 def load_chatbot():
-    df_chunks = pd.read_csv("chatbot_chunks.csv")
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    embeddings = embedder.encode(df_chunks['chunk'].tolist(), convert_to_numpy=True)
-    index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(embeddings)
-    return df_chunks, embedder, index
+    docs = pd.read_csv("chatbot_chunks.csv")  # must contain a 'chunk' column
+    embedder = SentenceTransformer('all-MiniLM-L6-v2')
+    doc_embeddings = embedder.encode(docs['chunk'].tolist(), convert_to_numpy=True)
+    index = faiss.IndexFlatL2(doc_embeddings.shape[1])
+    index.add(doc_embeddings)
+    return docs, embedder, index
 
-# Page layout
-st.title("🔄 Client Retention App")
+# === Main UI ===
+st.title("🔄 Client Retention Predictor")
 
 col1, col2 = st.columns([1, 4])
+
 with col1:
     page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
 
 with col2:
-
     if page == "Client Retention Predictor":
         st.write("Predict whether a client is likely to return based on their profile.")
 
@@ -104,24 +103,24 @@ with col2:
     elif page == "Feature Analysis Graphs":
         st.write('Feature Importance Plot')
         st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
-
         st.write("---")
         st.write("Waterfall Prediction Graph")
         st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
 
     elif page == "Chatbot":
         st.title("🤖 Chatbot: Ask About Client Data")
-        df_chunks, embedder, index = load_chatbot()
 
-        user_query = st.text_input("💬 Ask a question based on client summaries:")
+        docs, embedder, index = load_chatbot()
+
+        user_query = st.text_input("💬 Ask your question here:")
         if st.button("Get Answer") and user_query:
             try:
                 query_embedding = embedder.encode([user_query])
                 D, I = index.search(np.array(query_embedding), k=3)
-                results = df_chunks.iloc[I[0]]['chunk'].tolist()
+                results = docs.iloc[I[0]]['chunk'].tolist()
 
-                st.markdown("### 🧠 Top Matching Summaries:")
+                st.markdown("### 🧠 Top Matching Responses:")
                 for i, chunk in enumerate(results, 1):
                     st.markdown(f"**{i}.** {chunk}")
             except Exception as e:
-                st.error(f"❌ Error while answering: {e}")
+                st.error(f"❌ Error: {e}")
