@@ -2,32 +2,37 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from sentence_transformers import SentenceTransformer, util
-from transformers import pipeline
+from sentence_transformers import SentenceTransformer
 from datetime import datetime
+import faiss
+import numpy as np
 
-# Load the trained model
+# Load the trained prediction model
 model = joblib.load("XGB_model.jlib")
 
-st.title("🔄 Client Retention Predictor")
+# Chatbot embedding loader (for RAG)
+@st.cache_resource
+def load_chatbot():
+    df_chunks = pd.read_csv("chatbot_chunks.csv")
+    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = embedder.encode(df_chunks['chunk'].tolist(), convert_to_numpy=True)
+    index = faiss.IndexFlatL2(embeddings.shape[1])
+    index.add(embeddings)
+    return df_chunks, embedder, index
 
-col1, col2 = st.columns([1, 4])  # Adjust the width ratio as needed
+# Page layout
+st.title("🔄 Client Retention App")
 
-# Place the radio buttons in the first column
+col1, col2 = st.columns([1, 4])
 with col1:
     page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
 
-# Use the second column to display the content based on the selection
 with col2:
 
     if page == "Client Retention Predictor":
-        
         st.write("Predict whether a client is likely to return based on their profile.")
 
-        # Step 1: Ask for Season first
         season = st.selectbox("Season of Pickup", ["Select a season", "Spring", "Summer", "Fall", "Winter"])
-
-        # Dictionary of season to months
         season_months = {
             'Spring': ['March', 'April', 'May'],
             'Summer': ['June', 'July', 'August'],
@@ -35,11 +40,9 @@ with col2:
             'Winter': ['December', 'January', 'February']
         }
 
-        # Only show the month selection once a valid season is selected
         if season != "Select a season":
             month = st.selectbox("Month of Pickup", season_months[season])
 
-            # Then show the rest of the form
             with st.form("prediction_form"):
                 age = st.slider("Age", 18, 100, 35)
                 dependents_qty = st.number_input("Number of Dependents", 0, 12, 1)
@@ -60,8 +63,6 @@ with col2:
                 }
 
                 new_data = pd.DataFrame(d)
-
-                # One-hot encodings
                 new_data["household_yes"] = 1 if household == "Yes" else 0
                 new_data["sex_new_Male"] = 1 if sex == "Male" else 0
 
@@ -83,7 +84,6 @@ with col2:
                 for i in month_list:
                     new_data[i] = 1 if i == f"Month_{month}" else 0
 
-                # Predict
                 prediction = model.predict(new_data)[0]
                 probs = model.predict_proba(new_data)[0]
                 prob_return = probs[1]
@@ -98,19 +98,30 @@ with col2:
 
                 st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
                 st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
-
         else:
             st.info("Please select a season to continue.")
 
     elif page == "Feature Analysis Graphs":
         st.write('Feature Importance Plot')
-        image_path = "Graphs/fiupdate.png"
-        st.image(image_path, caption="Feature Importance", use_container_width=True)
+        st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
 
         st.write("---")
         st.write("Waterfall Prediction Graph")
-        image_path2 = "Graphs/waterfall.png"
-        st.image(image_path2, caption="Waterfall Graph", use_container_width=True)
+        st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
 
     elif page == "Chatbot":
-        st.title("Chatbot")
+        st.title("🤖 Chatbot: Ask About Client Data")
+        df_chunks, embedder, index = load_chatbot()
+
+        user_query = st.text_input("💬 Ask a question based on client summaries:")
+        if st.button("Get Answer") and user_query:
+            try:
+                query_embedding = embedder.encode([user_query])
+                D, I = index.search(np.array(query_embedding), k=3)
+                results = df_chunks.iloc[I[0]]['chunk'].tolist()
+
+                st.markdown("### 🧠 Top Matching Summaries:")
+                for i, chunk in enumerate(results, 1):
+                    st.markdown(f"**{i}.** {chunk}")
+            except Exception as e:
+                st.error(f"❌ Error while answering: {e}")
