@@ -29,10 +29,11 @@ def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
 
 def query_llm(query, context, llm):
     prompt = (
-        "Below are summaries of client data records.\n"
-        "Use the information to answer the user's question clearly and accurately.\n\n"
+        "You are a helpful assistant analyzing a client service dataset.\n"
+        "Below are sample records retrieved based on the user's question.\n"
+        "Summarize overall patterns or provide a useful answer.\n\n"
         f"Context:\n{context}\n\n"
-        f"Question: {query}\n\n"
+        f"User Question: {query}\n\n"
         "Answer:"
     )
     output = llm(prompt, max_new_tokens=200, do_sample=True, temperature=0.7)
