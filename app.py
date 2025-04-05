@@ -34,10 +34,10 @@ with col2:
             sex = st.selectbox("Gender of Client", ['Male', 'Female'])
             status = st.selectbox("Current Status", ['Active', 'Closed', 'Pending', 'Outreach', 'Flagged'])
             latest_lang_english = st.selectbox("Latest Language is English", ['Yes', 'No'])
-            
+
             # Season and dynamic month selection
             season = st.selectbox("Season of Pickup", ['Spring', 'Summer', 'Fall', 'Winter'])
-            
+
             season_months = {
                 'Spring': ['March', 'April', 'May'],
                 'Summer': ['June', 'July', 'August'],
@@ -52,12 +52,13 @@ with col2:
         # Prepare input and predict
         if submitted:
             
-            d = {'age': [age],
+            d = {
+                'age': [age],
                 'dependents_qty': [dependents_qty],
                 'distance_km': [distance_km],
                 'num_of_contact_methods': [num_of_contact_methods]
-                }
-            
+            }
+
             new_data = pd.DataFrame(d)
 
             # Household
@@ -66,25 +67,29 @@ with col2:
             # Sex
             new_data["sex_new_Male"] = 1 if sex == "Male" else 0
 
-            # Status
-            status_list = ['status_Active', 'status_Closed','status_Flagged', 'status_Outreach', 'status_Pending']
+            # Status one-hot encoding
+            status_list = ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']
             for i in status_list:
-                new_data[i] = 1 if i == "status_" + status else 0    
+                new_data[i] = 1 if i == f"status_{status}" else 0
 
             # Latest language
             new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
 
-            # Season
+            # Season one-hot encoding
             season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
             for i in season_list:
-                new_data[i] = 1 if i == "Season_" + season else 0   
+                new_data[i] = 1 if i == f"Season_{season}" else 0
 
-            # Month
-            month_list = ['Month_April', 'Month_August','Month_December', 'Month_Febuary', 'Month_January', 'Month_July',
-                        'Month_June', 'Month_March', 'Month_May', 'Month_November','Month_October', 'Month_September']
+            # Month one-hot encoding
+            month_list = [
+                'Month_April', 'Month_August', 'Month_December', 'Month_Febuary', 'Month_January',
+                'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
+                'Month_October', 'Month_September'
+            ]
             for i in month_list:
-                new_data[i] = 1 if i == "Month_" + month else 0   
+                new_data[i] = 1 if i == f"Month_{month}" else 0
 
+            # Make prediction
             prediction = model.predict(new_data)[0]
 
             st.markdown("---")
