@@ -6,12 +6,12 @@ from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 import torch
 
-# ========== Load XGBoost Model ==========
+# Load ML model
 model = joblib.load("XGB_model.jlib")
 
-# ========== Load and Embed Chunks from finalfile.csv ==========
-@st.cache_resource
-def load_rag_components():
+# ================== Load and Embed CSV for Chatbot ==================
+@st.cache_data
+def load_csv_chunks():
     df = pd.read_csv("finalfile.csv")
 
     def row_to_chunk(row):
@@ -23,38 +23,44 @@ def load_rag_components():
         )
 
     df['chunk'] = df.apply(row_to_chunk, axis=1)
+    return df
 
+@st.cache_resource
+def load_embeddings_model(df):
     embedder = SentenceTransformer("all-MiniLM-L6-v2")
     doc_embeddings = {
         idx: embedder.encode(text, convert_to_tensor=True)
         for idx, text in df['chunk'].items()
     }
-
     llm = pipeline("text2text-generation", model="google/flan-t5-large")
-    return df, embedder, doc_embeddings, llm
+    return embedder, doc_embeddings, llm
 
-def retrieve_context(query, embedder, doc_embeddings, documents, top_k=2):
+# ================== Retrieval + Prompt ==================
+def retrieve_context(query, embedder, doc_embeddings, documents, top_k=3):
     query_embedding = embedder.encode(query, convert_to_tensor=True)
     scores = {
         idx: util.pytorch_cos_sim(query_embedding, emb).item()
         for idx, emb in doc_embeddings.items()
     }
     top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return "\n\n".join(documents['chunk'][idx] for idx, _ in top_docs)
+    return "\n".join(f"- {documents['chunk'][idx]}" for idx, _ in top_docs)
 
 def query_llm(query, context, llm):
     prompt = (
-        "You have some background info and client summaries below.\n\n"
+        "You are a helpful assistant. Below are several summaries of client records.\n"
+        "Summarize the information and answer the question clearly using your own words.\n\n"
         f"Context:\n{context}\n\n"
-        f"User Query: {query}\n\nAnswer:"
+        f"Question: {query}\n\n"
+        "Answer:"
     )
     output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
     return output[0]["generated_text"].replace(prompt, "").strip()
 
-# ========== Chatbot Tab ==========
+# ================== Chatbot Page ==================
 def chatbot_page_rag():
     st.title("🤖 RAG Chatbot (from finalfile.csv)")
-    df, embedder, doc_embeddings, llm = load_rag_components()
+    df = load_csv_chunks()
+    embedder, doc_embeddings, llm = load_embeddings_model(df)
 
     query = st.text_input("💬 Ask your question:")
     if st.button("Get Answer") and query:
@@ -68,7 +74,7 @@ def chatbot_page_rag():
         except Exception as e:
             st.error(f"❌ Error generating answer: {e}")
 
-# ========== Sidebar Navigation ==========
+# ================== Sidebar Navigation ==================
 st.sidebar.title("Client Retention App")
 page = st.sidebar.radio("Select a Page", [
     "Client Retention Predictor",
@@ -76,7 +82,7 @@ page = st.sidebar.radio("Select a Page", [
     "Chatbot (RAG)"
 ])
 
-# ========== Predictor Tab ==========
+# ================== Predictor Tab ==================
 if page == "Client Retention Predictor":
     st.title("🔄 Client Retention Predictor")
 
@@ -144,13 +150,13 @@ if page == "Client Retention Predictor":
     else:
         st.info("Please select a season to continue.")
 
-# ========== Feature Graph Tab ==========
+# ================== Feature Graph Tab ==================
 elif page == "Feature Analysis Graphs":
     st.title("📊 Feature Analysis")
     st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
     st.markdown("---")
     st.image("Graphs/waterfall.png", caption="Waterfall Plot", use_container_width=True)
 
-# ========== Chatbot ==========
+# ================== Chatbot Page ==================
 elif page == "Chatbot (RAG)":
     chatbot_page_rag()
