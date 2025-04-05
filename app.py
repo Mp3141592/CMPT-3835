@@ -9,7 +9,6 @@ from datetime import datetime
 # Load the trained model
 model = joblib.load("XGB_model.jlib")
 
-
 st.title("🔄 Client Retention Predictor")
 
 col1, col2 = st.columns([1, 4])  # Adjust the width ratio as needed
@@ -35,10 +34,19 @@ with col2:
             sex = st.selectbox("Gender of Client", ['Male', 'Female'])
             status = st.selectbox("Current Status", ['Active', 'Closed', 'Pending', 'Outreach', 'Flagged'])
             latest_lang_english = st.selectbox("Latest Language is English", ['Yes', 'No'])
-            season = st.selectbox("Season of Pickup", ['Spring', 'Summer', 'Fall', 'Winter'])
-            month = st.selectbox("Month of Pickup", ['January', 'February', 'March', 'April', 'May', 'June',
-                                        'July', 'August', 'September', 'October', 'November', 'December'])
             
+            # Season and dynamic month selection
+            season = st.selectbox("Season of Pickup", ['Spring', 'Summer', 'Fall', 'Winter'])
+            
+            season_months = {
+                'Spring': ['March', 'April', 'May'],
+                'Summer': ['June', 'July', 'August'],
+                'Fall': ['September', 'October', 'November'],
+                'Winter': ['December', 'January', 'February']
+            }
+
+            month = st.selectbox("Month of Pickup", season_months[season])
+
             submitted = st.form_submit_button("Predict")
 
         # Prepare input and predict
@@ -52,48 +60,30 @@ with col2:
             
             new_data = pd.DataFrame(d)
 
+            # Household
+            new_data["household_yes"] = 1 if household == "Yes" else 0
 
-            if "Yes" == household:
-                new_data["household_yes"] = 1
-            else:
-                new_data["household_yes"] = 0
+            # Sex
+            new_data["sex_new_Male"] = 1 if sex == "Male" else 0
 
-
-            if 'Male' == sex:
-                new_data["sex_new_Male"] = 1
-            else:
-                new_data["sex_new_Male"] = 0
-
+            # Status
             status_list = ['status_Active', 'status_Closed','status_Flagged', 'status_Outreach', 'status_Pending']
-            
             for i in status_list:
-                if i == "status"+status:
-                    new_data[i] = 1
-                else:
-                    new_data[i] = 0    
+                new_data[i] = 1 if i == "status_" + status else 0    
 
-            
-            if 'Yes' == latest_lang_english:
-                new_data["latest_language_is_english_Yes"] = 1
-            else:
-                new_data["latest_language_is_english_Yes"] = 0
+            # Latest language
+            new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
 
+            # Season
             season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
-
             for i in season_list:
-                if i == "Season"+season:
-                    new_data[i] = 1
-                else:
-                    new_data[i] = 0   
-            
-            month_list = ['Month_April', 'Month_August','Month_December', 'Month_Febuary', 'Month_January', 'Month_July','Month_June', 
-                        'Month_March', 'Month_May', 'Month_November','Month_October', 'Month_September']
-            
+                new_data[i] = 1 if i == "Season_" + season else 0   
+
+            # Month
+            month_list = ['Month_April', 'Month_August','Month_December', 'Month_Febuary', 'Month_January', 'Month_July',
+                        'Month_June', 'Month_March', 'Month_May', 'Month_November','Month_October', 'Month_September']
             for i in month_list:
-                if i == "Month"+month:
-                    new_data[i] = 1
-                else:
-                    new_data[i] = 0   
+                new_data[i] = 1 if i == "Month_" + month else 0   
 
             prediction = model.predict(new_data)[0]
 
@@ -104,25 +94,17 @@ with col2:
             else:
                 st.warning(f"⚠️ Client may not return")
 
-
     elif page == "Feature Analysis Graphs":
         st.write('Feature Importance Plot')
 
         image_path = "Graphs/fiupdate.png"
-
         st.image(image_path, caption="Feature Importance", use_container_width=True)
 
         st.write("---")
-
         st.write("Waterfall Prediction Graph")
 
         image_path2 = "Graphs/waterfall.png"
-
         st.image(image_path2, caption="Waterfall Graph", use_container_width=True)
-
 
     elif page == "Chatbot":
         st.title("Chatbot")
-
-
-
