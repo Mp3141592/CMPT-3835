@@ -1,155 +1,107 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-import torch
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
+from datetime import datetime
 
-# ===========================
-# Load RAG Chatbot Components
-# ===========================
-@st.cache_resource
-def load_rag_components():
-    df = pd.read_csv("chatbot_chunks_final.csv")
-    embeddings = np.load("chatbot_embeddings.npy")
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    doc_embeddings = [torch.tensor(embeddings[i]) for i in range(len(df))]
-    llm = pipeline("text2text-generation", model="google/flan-t5-large")
-    return df, embedder, doc_embeddings, llm
+# Load the trained model
+model = joblib.load("XGB_model.jlib")
 
-def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
-    query_emb = embedder.encode(query, convert_to_tensor=True)
-    scores = {}
+st.title("🔄 Client Retention Predictor")
 
-    for idx, emb in enumerate(doc_embeddings):
-        score = util.pytorch_cos_sim(query_emb, emb).item()
-        scores[idx] = score
+col1, col2 = st.columns([1, 4])  # Adjust the width ratio as needed
 
-    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return "\n\n".join([f"- {docs['chunk'].iloc[idx]}" for idx, _ in top_docs])
+# Place the radio buttons in the first column
+with col1:
+    page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
 
-def query_llm(query, context, llm):
-    prompt = (
-        "You are a helpful assistant summarizing client trends from a dataset.\n"
-        "The following context contains summarized records.\n"
-        "Use this context to answer the user's question as clearly and completely as possible.\n"
-        "Do not make up information. Focus only on what's present in the data summaries.\n\n"
-        f"Context:\n{context}\n\n"
-        f"User Question: {query}\n\n"
-        "Answer:"
-    )
+# Use the second column to display the content based on the selection
+with col2:
 
-    output = llm(prompt, max_new_tokens=200, do_sample=True, temperature=0.7)
-    return output[0]['generated_text'].replace(prompt, "").strip()
+    if page == "Client Retention Predictor":
+        
+        st.write("Predict whether a client is likely to return based on their profile.")
 
-# ===========================
-# Chatbot Page
-# ===========================
-def chatbot_page():
-    st.subheader("🤖 Chatbot (Data Q&A)")
-    user_input = st.text_input("Ask your question here:")
+        # Step 1: Ask for Season first
+        season = st.selectbox("Season of Pickup", ["Select a season", "Spring", "Summer", "Fall", "Winter"])
 
-    if user_input:
-        with st.spinner("Thinking..."):
-            df, embedder, doc_embeddings, llm = load_rag_components()
-            context = retrieve_context(user_input, embedder, doc_embeddings, df)
-            answer = query_llm(user_input, context, llm)
-
-        st.markdown("### 📄 Retrieved Context:")
-        st.info(context)
-
-        st.markdown("### 💬 Answer:")
-        st.success(answer)
-
-# ===========================
-# Predictor Page
-# ===========================
-def predictor_page():
-    st.subheader("📈 Client Return Predictor")
-
-    age = st.slider("Age", 18, 100, 30)
-    dependents_qty = st.number_input("Dependents", min_value=0, max_value=10, value=1)
-    distance_km = st.number_input("Distance to Location (km)", min_value=0.0, max_value=100.0, value=5.0)
-    num_of_contact_methods = st.number_input("Number of Contact Methods", min_value=1, max_value=5, value=2)
-    household = st.selectbox("Has a household", ["Yes", "No"])
-    sex = st.selectbox("Sex", ["Male", "Female"])
-    status = st.selectbox("Status", ["Active", "Closed", "Flagged", "Outreach", "Pending"])
-    latest_lang_english = st.selectbox("Latest language is English", ["Yes", "No"])
-    season = st.selectbox("Season of Pickup", ["Fall", "Spring", "Summer", "Winter"])
-    month = st.selectbox("Month of Pickup", [
-        "April", "August", "December", "February", "January", "July", "June",
-        "March", "May", "November", "October", "September"
-    ])
-
-    submitted = st.button("Predict")
-
-    if submitted:
-        d = {
-            'age': [age],
-            'dependents_qty': [dependents_qty],
-            'distance_km': [distance_km],
-            'num_of_contact_methods': [num_of_contact_methods]
+        # Dictionary of season to months
+        season_months = {
+            'Spring': ['March', 'April', 'May'],
+            'Summer': ['June', 'July', 'August'],
+            'Fall': ['September', 'October', 'November'],
+            'Winter': ['December', 'January', 'February']
         }
 
-        df_input = pd.DataFrame(d)
-        df_input["household_Yes"] = 1 if household == "Yes" else 0
-        df_input["sex_new_Male"] = 1 if sex == "Male" else 0
+        # Only show the month selection once a valid season is selected
+        if season != "Select a season":
+            month = st.selectbox("Month of Pickup", season_months[season])
 
-        for s in ["Active", "Closed", "Flagged", "Outreach", "Pending"]:
-            df_input[f"status_{s}"] = 1 if status == s else 0
+            # Then show the rest of the form
+            with st.form("prediction_form"):
+                age = st.slider("Age", 18, 100, 35)
+                dependents_qty = st.number_input("Number of Dependents", 0, 12, 1)
+                distance_km = st.number_input("Distance to Location (km)", 0.0, 210.0, 5.0)
+                num_of_contact_methods = st.slider("Number of Contact Methods", 1, 5, 2)
+                household = st.selectbox("Has a household", ['Yes', 'No'])
+                sex = st.selectbox("Gender of Client", ['Male', 'Female'])
+                status = st.selectbox("Current Status", ['Active', 'Closed', 'Pending', 'Outreach', 'Flagged'])
+                latest_lang_english = st.selectbox("Latest Language is English", ['Yes', 'No'])
+                submitted = st.form_submit_button("Predict")
 
-        df_input["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
+            if submitted:
+                d = {
+                    'age': [age],
+                    'dependents_qty': [dependents_qty],
+                    'distance_km': [distance_km],
+                    'num_of_contact_methods': [num_of_contact_methods]
+                }
 
-        for s in ["Fall", "Spring", "Summer", "Winter"]:
-            df_input[f"Season_{s}"] = 1 if season == s else 0
+                new_data = pd.DataFrame(d)
 
-        for m in [
-            "April", "August", "December", "February", "January", "July", "June",
-            "March", "May", "November", "October", "September"
-        ]:
-            df_input[f"Month_{m}"] = 1 if month == m else 0
+                # One-hot encodings
+                new_data["household_yes"] = 1 if household == "Yes" else 0
+                new_data["sex_new_Male"] = 1 if sex == "Male" else 0
 
-        model = joblib.load("XGB_model.jlib")
-        prediction = model.predict(df_input)[0]
-        probs = model.predict_proba(df_input)[0]
+                status_list = ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']
+                for i in status_list:
+                    new_data[i] = 1 if i == f"status_{status}" else 0
 
-        st.subheader("📊 Prediction Result:")
-        if prediction == 1:
-            st.success("✅ Client is likely to return")
+                new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
+
+                season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
+                for i in season_list:
+                    new_data[i] = 1 if i == f"Season_{season}" else 0
+
+                month_list = [
+                    'Month_April', 'Month_August', 'Month_December', 'Month_Febuary', 'Month_January',
+                    'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
+                    'Month_October', 'Month_September'
+                ]
+                for i in month_list:
+                    new_data[i] = 1 if i == f"Month_{month}" else 0
+
+                # Predict
+                prediction = model.predict(new_data)[0]
+                probs = model.predict_proba(new_data)[0]
+                prob_return = probs[1]
+                prob_not_return = probs[0]
+
+                st.markdown("---")
+                st.subheader("Prediction Result:")
+                if prediction == 1:
+                    st.success("✅ Client is likely to return")
+                else:
+                    st.warning("⚠️ Client may not return")
+
+                st.info(f"🔢 Probability of returning: **{prob_return:.2%}**")
+                st.info(f"🔢 Probability of not returning: **{prob_not_return:.2%}**")
+
         else:
-            st.warning("⚠️ Client may not return")
+            st.info("Please select a season to continue.")
 
-        st.info(f"📈 Probability of returning: {probs[1]*100:.2f}%")
-        st.info(f"📉 Probability of not returning: {probs[0]*100:.2f}%")
-
-# ===========================
-# Graphs Page
-# ===========================
-def graphs_page():
-    st.subheader("📊 Feature Analysis Graphs")
-    st.image("Graphs/fipupdate.png", caption="Feature Importance", use_container_width=True)
-    st.image("Graphs/waterfall.png", caption="SHAP Waterfall Plot", use_container_width=True)
-
-# ===========================
-# Main Navigation
-# ===========================
-def main():
-    st.set_page_config(page_title="Client Retention Tool", layout="wide")
-    st.title("📊 Client Retention Dashboard")
-
-    page = st.sidebar.radio("Choose a section:", [
-        "Chatbot (Data Q&A)",
-        "Client Return Predictor",
-        "Feature Analysis Graphs"
-    ])
-
-    if page == "Chatbot (Data Q&A)":
-        chatbot_page()
-    elif page == "Client Return Predictor":
-        predictor_page()
     elif page == "Feature Analysis Graphs":
-        graphs_page()
-
-if __name__ == "__main__":
-    main()
+        st.write('Feature Importance Plot')
+        image_path = "Graphs/fiupdate.png"
+        st.image(image
