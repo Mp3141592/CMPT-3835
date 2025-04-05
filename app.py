@@ -18,7 +18,7 @@ def load_rag_components():
     llm = pipeline("text2text-generation", model="google/flan-t5-large")
     return df, embedder, doc_embeddings, llm
 
-def retrieve_context(query, embedder, doc_embeddings, docs, top_k=3):
+def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):  # Increased to 5
     query_emb = embedder.encode(query, convert_to_tensor=True)
     scores = {
         idx: util.pytorch_cos_sim(query_emb, emb).item()
@@ -29,20 +29,21 @@ def retrieve_context(query, embedder, doc_embeddings, docs, top_k=3):
 
 def query_llm(query, context, llm):
     prompt = (
-        "You are a helpful assistant. Below are summaries of client records.\n"
-        "Summarize the information and answer the user's question clearly using your own words.\n\n"
+        "Below are examples of client records from a dataset.\n"
+        "Use the information to answer the user's question clearly and insightfully.\n"
+        "If the question is general (e.g., 'what is this data about?'), summarize the data as a whole.\n\n"
         f"Context:\n{context}\n\n"
         f"Question: {query}\n\n"
         "Answer:"
     )
-    output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
+    output = llm(prompt, max_new_tokens=200, do_sample=True, temperature=0.7)
     return output[0]["generated_text"].replace(prompt, "").strip()
 
 # ===============================
-# RAG Chatbot Page
+# Chatbot Page
 # ===============================
 def chatbot_page():
-    st.title("🤖 RAG Chatbot (from finalfile.csv)")
+    st.title("🤖 RAG Chatbot (CSV-Based)")
     with st.spinner("Loading chatbot components..."):
         df, embedder, doc_embeddings, llm = load_rag_components()
 
@@ -130,9 +131,9 @@ def graphs_page():
     st.image("Graphs/waterfall.png", caption="Waterfall Plot", use_container_width=True)
 
 # ===============================
-# Main Navigation
+# Navigation Sidebar
 # ===============================
-st.sidebar.title("📂 IFSSA Client Retention App")
+st.sidebar.title("📂 Client Retention App")
 page = st.sidebar.radio("Select a Page", [
     "Client Retention Predictor",
     "Feature Analysis Graphs",
