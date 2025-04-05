@@ -104,4 +104,50 @@ with col2:
     elif page == "Feature Analysis Graphs":
         st.write('Feature Importance Plot')
         image_path = "Graphs/fiupdate.png"
-        st.image(image
+        st.image(image_path, caption="Feature Importance", use_container_width=True)
+
+        st.write("---")
+        st.write("Waterfall Prediction Graph")
+        image_path2 = "Graphs/waterfall.png"
+        st.image(image_path2, caption="Waterfall Graph", use_container_width=True)
+
+    elif page == "Chatbot":
+        # ===========================
+        # Chatbot Page
+        # ===========================
+        st.title("Chatbot")
+
+        # Load RAG chatbot components
+        @st.cache_resource
+        def load_rag_components():
+            df = pd.read_csv("chatbot_chunks_final.csv")
+            embeddings = np.load("chatbot_embeddings.npy")
+            embedder = SentenceTransformer('all-MiniLM-L6-v2')
+            return df, embeddings, embedder
+
+        # Function to retrieve the context
+        def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
+            query_emb = embedder.encode(query, convert_to_tensor=True)
+            scores = {}
+
+            for idx, emb in enumerate(doc_embeddings):
+                score = util.pytorch_cos_sim(query_emb, emb).item()
+                scores[idx] = score
+
+            top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+            context = "\n".join([docs[idx] for idx, _ in top_docs])
+            return context
+
+        # Function to query the LLM (FLAN-T5)
+        def query_llm(query, context, llm):
+            prompt = f"Context: {context}\n\nQuestion: {query}\nAnswer:"
+            output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
+            return output[0]['generated_text'].strip()
+
+        user_input = st.text_input("Ask your question:")
+        if user_input:
+            with st.spinner("Thinking..."):
+                df, embeddings, embedder = load_rag_components()
+                context = retrieve_context(user_input, embedder, embeddings, df['chunk'].tolist())
+                answer = query_llm(user_input, context, llm)
+                st.write(f"**Answer:** {answer}")
