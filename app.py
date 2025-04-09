@@ -49,7 +49,7 @@ def query_llm(query, context, llm):
 # Client Retention Prediction Page
 # ==========================================
 def predictor_page():
-    model = joblib.load("XGB_model.jlib")
+    model = joblib.load("client_retention_model.pkl")
     st.subheader("🔄 Client Retention Predictor")
 
     with st.form("prediction_form"):
