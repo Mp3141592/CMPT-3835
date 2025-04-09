@@ -1,0 +1,145 @@
+Column1
+chunk
+The dataset contains 16486 total client records. The average age is 43.5 years. The average number of dependents is 3.8. The average distance to pickup is 7.4 km.
+"In Summer, there were 4346 pickups. Average age: 43.5 years. Average dependents: 3.8. Top language: Arabic. Most common status: Active."
+"In Fall, there were 4357 pickups. Average age: 43.5 years. Average dependents: 3.8. Top language: Arabic. Most common status: Active."
+"In Winter, there were 4389 pickups. Average age: 43.5 years. Average dependents: 3.8. Top language: Arabic. Most common status: Active."
+"In Spring, there were 3394 pickups. Average age: 43.5 years. Average dependents: 3.7. Top language: Arabic. Most common status: Active."
+"In August, there were 1307 pickups. Average distance: 7.6 km. Top status: Active. Top language: Arabic."
+"In September, there were 1268 pickups. Average distance: 7.3 km. Top status: Active. Top language: Arabic."
+"In October, there were 1290 pickups. Average distance: 7.3 km. Top status: Active. Top language: Arabic."
+"In November, there were 1799 pickups. Average distance: 7.4 km. Top status: Active. Top language: Arabic."
+"In December, there were 1684 pickups. Average distance: 7.6 km. Top status: Active. Top language: Arabic."
+"In January, there were 1525 pickups. Average distance: 7.6 km. Top status: Active. Top language: Arabic."
+"In Febuary, there were 1180 pickups. Average distance: 7.5 km. Top status: Active. Top language: Arabic."
+"In March, there were 1084 pickups. Average distance: 7.4 km. Top status: Active. Top language: Arabic."
+"In April, there were 1050 pickups. Average distance: 7.3 km. Top status: Active. Top language: Arabic."
+"In May, there were 1260 pickups. Average distance: 7.3 km. Top status: Active. Top language: Arabic."
+"In June, there were 1596 pickups. Average distance: 7.5 km. Top status: Active. Top language: Arabic."
+"In July, there were 1443 pickups. Average distance: 7.2 km. Top status: Active. Top language: Arabic."
+Female clients made 7938 pickups. Average age: 42.8. Average dependents: 3.2.
+Male clients made 8526 pickups. Average age: 44.1. Average dependents: 4.3.
+ Female clients made 22 pickups. Average age: 51.0. Average dependents: 0.4.
+Clients with status 'Active' had 15620 records. Average age: 43.5. Average distance: 7.4 km.
+Clients with status 'Closed' had 610 records. Average age: 43.8. Average distance: 6.9 km.
+Clients with status 'Pending' had 211 records. Average age: 40.8. Average distance: 7.4 km.
+Clients with status 'Outreach' had 31 records. Average age: 29.2. Average distance: 4.0 km.
+Clients with status 'Flagged' had 14 records. Average age: 21.0. Average distance: 6.3 km.
+English speakers made 428 pickups. Average age: 40.4. Average dependents: 2.1.
+Arabic speakers made 5621 pickups. Average age: 43.7. Average dependents: 4.1.
+"Arabic , French speakers made 244 pickups. Average age: 42.5. Average dependents: 2.4."
+Turkish speakers made 149 pickups. Average age: 39.1. Average dependents: 2.7.
+"English , Arabic speakers made 382 pickups. Average age: 36.8. Average dependents: 3.8."
+"Arabic , Somali speakers made 73 pickups. Average age: 45.1. Average dependents: 2.0."
+Oromo speakers made 85 pickups. Average age: 48.0. Average dependents: 3.1.
+"Somali , English speakers made 1027 pickups. Average age: 44.8. Average dependents: 3.7."
+Dari speakers made 239 pickups. Average age: 40.5. Average dependents: 3.8.
+Pashto speakers made 137 pickups. Average age: 44.9. Average dependents: 3.6.
+"Kurdish , Arabic speakers made 94 pickups. Average age: 39.3. Average dependents: 5.0."
+"Arabic , English speakers made 2320 pickups. Average age: 47.1. Average dependents: 4.1."
+Somali speakers made 1217 pickups. Average age: 43.1. Average dependents: 3.9.
+"Kurdish , English speakers made 15 pickups. Average age: 42.0. Average dependents: 7.0."
+Persian speakers made 332 pickups. Average age: 39.2. Average dependents: 4.0.
+Tigrinya speakers made 112 pickups. Average age: 46.9. Average dependents: 2.3.
+"Pashto , Urdu speakers made 34 pickups. Average age: 38.0. Average dependents: 7.5."
+"Persian , Urdu speakers made 38 pickups. Average age: 67.4. Average dependents: 2.1."
+French speakers made 188 pickups. Average age: 41.1. Average dependents: 3.6.
+"Pashto , English speakers made 75 pickups. Average age: 38.5. Average dependents: 4.7."
+"Somali , Arabic speakers made 314 pickups. Average age: 44.3. Average dependents: 3.7."
+"Arabic , Turkish speakers made 89 pickups. Average age: 37.1. Average dependents: 4.9."
+"Dari , Turkish speakers made 25 pickups. Average age: 31.0. Average dependents: 3.0."
+"French , English speakers made 285 pickups. Average age: 42.5. Average dependents: 4.0."
+"Arabic , Tigrinya speakers made 66 pickups. Average age: 42.5. Average dependents: 2.0."
+"English , Urdu speakers made 50 pickups. Average age: 32.5. Average dependents: 1.6."
+"Oromo , English speakers made 148 pickups. Average age: 51.0. Average dependents: 2.0."
+"Persian , English speakers made 349 pickups. Average age: 38.5. Average dependents: 3.1."
+"Pashto , Dari speakers made 42 pickups. Average age: 35.7. Average dependents: 5.7."
+"Somali , Somali speakers made 28 pickups. Average age: 46.4. Average dependents: 4.0."
+"Hausa , English speakers made 14 pickups. Average age: 35.0. Average dependents: 2.0."
+"American Sign Language (ASL) , Somali speakers made 16 pickups. Average age: 30.0. Average dependents: 8.0."
+"Harari , English speakers made 27 pickups. Average age: 44.1. Average dependents: 6.4."
+"Arabic , Kurdish speakers made 122 pickups. Average age: 40.8. Average dependents: 5.5."
+Amharic speakers made 54 pickups. Average age: 48.8. Average dependents: 3.3.
+"Arabic , Arabic speakers made 188 pickups. Average age: 49.2. Average dependents: 3.2."
+"Dari , English speakers made 176 pickups. Average age: 39.0. Average dependents: 3.0."
+"Punjabi , English speakers made 15 pickups. Average age: 68.0. Average dependents: 3.0."
+"Bengali , English speakers made 40 pickups. Average age: 37.8. Average dependents: 2.0."
+"Luganba , English speakers made 13 pickups. Average age: 44.0. Average dependents: 1.0."
+Afrikaans speakers made 71 pickups. Average age: 39.3. Average dependents: 1.2.
+"Swahili , English speakers made 37 pickups. Average age: 51.4. Average dependents: 2.6."
+Urdu speakers made 56 pickups. Average age: 51.0. Average dependents: 2.2.
+Kurdish speakers made 100 pickups. Average age: 46.6. Average dependents: 1.4.
+"Afrikaans , English speakers made 30 pickups. Average age: 41.0. Average dependents: 4.0."
+"Tigrinya , English speakers made 81 pickups. Average age: 43.4. Average dependents: 2.6."
+"Urdu , English speakers made 23 pickups. Average age: 39.0. Average dependents: 3.0."
+"Swahili , French speakers made 42 pickups. Average age: 40.8. Average dependents: 4.7."
+"Oromo , Somali speakers made 36 pickups. Average age: 43.6. Average dependents: 4.6."
+"English , Somali speakers made 137 pickups. Average age: 46.4. Average dependents: 3.1."
+Swahili speakers made 30 pickups. Average age: 53.0. Average dependents: 2.0.
+"Tigre , Arabic speakers made 34 pickups. Average age: 33.2. Average dependents: 7.1."
+"Tigrinya , Arabic speakers made 42 pickups. Average age: 47.2. Average dependents: 3.7."
+"French , Arabic speakers made 20 pickups. Average age: 26.0. Average dependents: 2.0."
+"Oromo , Arabic speakers made 35 pickups. Average age: 46.4. Average dependents: 2.3."
+"Persian , Dari speakers made 17 pickups. Average age: 46.4. Average dependents: 8.8."
+"Dari , Urdu speakers made 20 pickups. Average age: 42.0. Average dependents: 3.0."
+"Russian , English speakers made 17 pickups. Average age: 35.0. Average dependents: 4.0."
+"Dari , Pashto speakers made 57 pickups. Average age: 47.1. Average dependents: 3.8."
+"Persian , Pashto speakers made 14 pickups. Average age: 31.0. Average dependents: 3.0."
+"Albanian , Albanian speakers made 13 pickups. Average age: 32.0. Average dependents: 2.0."
+"Arabic , Russian speakers made 24 pickups. Average age: 32.0. Average dependents: 2.0."
+"Arabic , Maithili speakers made 14 pickups. Average age: 45.0. Average dependents: 1.0."
+"English , Persian speakers made 27 pickups. Average age: 28.6. Average dependents: 2.0."
+"Indonesian , English speakers made 24 pickups. Average age: 39.0. Average dependents: 2.0."
+"Urdu , Pashto speakers made 16 pickups. Average age: 30.0. Average dependents: 6.0."
+"English , Kurdish speakers made 15 pickups. Average age: 38.0. Average dependents: 2.0."
+"Arabic , Hausa speakers made 16 pickups. Average age: 51.0. Average dependents: 3.0."
+Portuguese speakers made 63 pickups. Average age: 37.8. Average dependents: 5.3.
+"Arabic , Ukrainian speakers made 14 pickups. Average age: 34.0. Average dependents: 3.0."
+"Dari , Persian speakers made 41 pickups. Average age: 34.6. Average dependents: 2.1."
+"Arabic , Amharic speakers made 21 pickups. Average age: 36.0. Average dependents: 1.0."
+"Amharic , English speakers made 13 pickups. Average age: 43.0. Average dependents: 2.0."
+"English , Urdu , Bengali , Hindi speakers made 15 pickups. Average age: 65.0. Average dependents: 3.0."
+"English , Arabic , French speakers made 40 pickups. Average age: 40.7. Average dependents: 3.0."
+"Afrikaans , Arabic speakers made 21 pickups. Average age: 56.0. Average dependents: 5.0."
+"English , Oromo speakers made 15 pickups. Average age: 30.0. Average dependents: 3.0."
+"Albanian , Italian speakers made 13 pickups. Average age: 41.0. Average dependents: 2.0."
+"English , Swahili speakers made 36 pickups. Average age: 46.9. Average dependents: 4.6."
+"English , Spanish speakers made 22 pickups. Average age: 39.0. Average dependents: 4.0."
+"English , Dari , Pashto speakers made 8 pickups. Average age: 25.0. Average dependents: 6.0."
+"Igbo , English speakers made 21 pickups. Average age: 38.0. Average dependents: 5.0."
+"Arabic , Oromo speakers made 14 pickups. Average age: 55.0. Average dependents: 4.0."
+"English , Arabic , Oromo speakers made 7 pickups. Average age: 29.0. Average dependents: 3.0."
+"Arabic , Bengali speakers made 4 pickups. Average age: 3.0. Average dependents: 1.0."
+"English , Arabic , Turkish speakers made 9 pickups. Average age: 32.0. Average dependents: 1.0."
+"Turkish , Dari speakers made 23 pickups. Average age: 35.0. Average dependents: 6.0."
+"English , French speakers made 21 pickups. Average age: 37.9. Average dependents: 3.7."
+"Urdu , Punjabi speakers made 1 pickups. Average age: 47.0. Average dependents: 1.0."
+"Punjabi , Urdu speakers made 10 pickups. Average age: 75.0. Average dependents: 1.0."
+"English , Hindi speakers made 15 pickups. Average age: 68.9. Average dependents: 1.1."
+"Somali , French speakers made 14 pickups. Average age: 32.0. Average dependents: 4.0."
+"French , Somali speakers made 13 pickups. Average age: 44.0. Average dependents: 3.0."
+"English , Dari speakers made 25 pickups. Average age: 29.0. Average dependents: 2.0."
+"Arabic , Somali , Oromo speakers made 26 pickups. Average age: 63.0. Average dependents: 1.0."
+"English , Oromo , Swahili speakers made 12 pickups. Average age: 41.0. Average dependents: 6.0."
+"Arabic , Armenian speakers made 3 pickups. Average age: 24.0. Average dependents: 1.0."
+"English , Portuguese speakers made 27 pickups. Average age: 13.9. Average dependents: 2.9."
+0 clients had households and 0 did not. Clients without households traveled an average of nan km.
+Clients contacted via In-Person had 16486 pickups. Average age: 43.5. Average contact methods used: 1.4.
+"IFSSA (Islamic Family and Social Services Association) works on addressing the security, safety and growth needs of its clients through a range of programming that includes culturally appropriate food hampers, crisis support, domestic violence intervention, refugee support, preventative youth programming and more."
+"Over 2,000 food hampers are distributed monthly by IFSSA to individuals and families in need."
+"IFSSA offers counseling and support services in 10 different languages, ensuring accessibility for diverse clients."
+"In addition to essential needs, IFSSA provides family support, mental health counseling, newcomer assistance, youth programs, support groups, education and training, prison programming and re-entry support, and community engagement initiatives."
+Community members can participate by volunteering their time and skills to support IFSSA programs and services.
+Individuals can contribute financially through various giving options listed on IFSSA’s website.
+IFSSA hosts events such as 'A Gathering for Edmonton: Impact That Stays Close to Home' and 'Refugee Sponsorship: Information Sessions' to engage the community.
+"IFSSA's contact address is: IslamicFamily Hüb, 2-786, 10545 108 Street, Edmonton AB, T5H 2Z8."
+IFSSA's Helpline is available daily from 10 AM to 10 PM at 780.900.2777.
+IFSSA can be contacted by email at info@islamicfamily.ca.
+To get food hampers from IFSSA call IFSSA at (780) 430-9220 to book an appointment for a halal food hamper. Note that there are no walk-ins allowed1.
+"The top 3 months with the most client pickups are: November, December, June."
+Most pickups occur in the Winter and Fall seasons.
+"The majority of clients are Males, followed by  Females."
+The most common method of contact is In-Person.
+"On average, clients live 7.4 km away and have about 3.8 dependents."
+"The average client age is 43.5, ranging from 0 to 86 years old."
+About 78.1% of clients returned to collect their hamper.
