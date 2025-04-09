@@ -1,31 +1,22 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
-# ------------------------------------------------------------------------------
-# Load Model for Prediction Tab
-# ------------------------------------------------------------------------------
+# ---------------------------- Load ML Model ----------------------------
 model = joblib.load("client_retention_model.pkl")
 
-# ------------------------------------------------------------------------------
-# Load Data for Chatbot
-# ------------------------------------------------------------------------------
+# ---------------------------- Load Chatbot Data ----------------------------
 df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")
-documents = df_chunks["chunk"]
+documents = {f"doc_{i}": chunk for i, chunk in enumerate(df_chunks['chunk'])}
 
-# Embed documents
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
+# ---------------------------- Setup Embedding & Generator ----------------------------
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
 doc_embeddings = {
     doc_id: embedder.encode(text, convert_to_tensor=True)
     for doc_id, text in documents.items()
 }
-
-# FLAN-T5 chatbot pipeline
-generator = pipeline("text2text-generation", model="google/flan-t5-large")
 
 def retrieve_context(query, top_k=2):
     query_embedding = embedder.encode(query, convert_to_tensor=True)
@@ -33,37 +24,38 @@ def retrieve_context(query, top_k=2):
         doc_id: util.pytorch_cos_sim(query_embedding, emb).item()
         for doc_id, emb in doc_embeddings.items()
     }
-    sorted_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    top_doc_ids = [doc_id for doc_id, _ in sorted_docs[:top_k]]
-    return "\n\n".join(documents[doc_id] for doc_id in top_doc_ids)
+    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    return "\n\n".join(documents[doc_id] for doc_id, _ in top_docs)
+
+generator = pipeline("text2text-generation", model="google/flan-t5-large")
 
 def query_llm(query, context):
     prompt = (
-        "You have some background info below. Answer the user's query clearly.\n\n"
-        f"Context:\n{context}\n\nUser Query: {query}\n\nAnswer:"
+        "You have some background info and document data below. "
+        "Analyze the context and answer the user’s query clearly and succinctly.\n\n"
+        f"Context:\n{context}\n\n"
+        f"User Query: {query}\n\n"
+        "Answer:"
     )
-    response = generator(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)[0]['generated_text']
-    return response.strip().replace(prompt, '').strip()
+    result = generator(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
+    answer = result[0]['generated_text']
+    return answer.replace(prompt, "").strip()
 
 def rag_chatbot(query):
     context = retrieve_context(query)
     return query_llm(query, context)
 
-# ------------------------------------------------------------------------------
-# Streamlit App
-# ------------------------------------------------------------------------------
-st.title("🔄 Client Retention Predictor + Chatbot")
+# ---------------------------- Streamlit UI ----------------------------
+st.set_page_config(page_title="Client Retention App", layout="wide")
+st.title("🔄 Client Retention Predictor & 📚 Chatbot Assistant")
 
 col1, col2 = st.columns([1, 4])
 with col1:
-    page = st.radio("Choose a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
+    page = st.radio("Choose a section", ["Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"])
 
 with col2:
-
-    # ---------------------- TAB 1: Prediction ----------------------
     if page == "Client Retention Predictor":
-        st.write("Predict whether a client is likely to return based on their profile.")
-
+        st.subheader("📊 Predict Client Retention")
         with st.form("prediction_form"):
             contact_method = st.selectbox("Contact Method", ['phone', 'email', 'in-person'])
             household = st.selectbox("Household Type", ['single', 'family'])
@@ -106,22 +98,18 @@ with col2:
             else:
                 st.warning(f"⚠️ Client may not return (Probability: {round(probability, 2)})")
 
-    # ---------------------- TAB 2: Feature Analysis ----------------------
     elif page == "Feature Analysis Graphs":
-        st.write('Feature Importance Plot')
+        st.subheader("📈 Feature Importance Plot")
         st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
+
         st.write("---")
-        st.write("Waterfall Prediction Graph")
+        st.subheader("📊 Waterfall Prediction Graph")
         st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
 
-    # ---------------------- TAB 3: Chatbot ----------------------
     elif page == "Chatbot":
-        st.write("Ask a question based on client data or operations. Example:")
-        st.info("🧠 Example: *What trends can be observed from client return patterns?*")
-        user_query = st.text_input("Type your question here")
-
+        st.subheader("🤖 Ask the Client Insights Chatbot")
+        user_query = st.text_input("Ask a question about client behavior, pickups, languages, etc.")
         if user_query:
             with st.spinner("Thinking..."):
-                answer = rag_chatbot(user_query)
-                st.markdown("**Answer:**")
-                st.write(answer)
+                response = rag_chatbot(user_query)
+                st.success(response)
