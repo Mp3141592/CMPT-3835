@@ -11,7 +11,7 @@ model = joblib.load("client_retention_model.pkl")
 
 # Load chatbot content, skipping the first placeholder row
 df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv", skiprows=1)
-documents = {text: text for text in df_chunks["chunk"].dropna()}
+documents = df_chunks
 
 # Set up embedding and generation models
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
