@@ -4,15 +4,14 @@ import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
-
-# ---------------------------- Load ML Model ----------------------------
+# -------------------- Load ML Model --------------------
 model = joblib.load("client_retention_model.pkl")
 
-# ---------------------------- Load Chatbot Data ----------------------------
-df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")
-documents = {f"doc_{i}": chunk for i, chunk in enumerate(df_chunks['chunk'])}
+# -------------------- Load Chatbot Data --------------------
+df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")  # header is present
+documents = {f"doc_{i}": row['chunk'] for i, row in df_chunks.iterrows()}
 
-# ---------------------------- Setup Embedding & Generator ----------------------------
+# -------------------- Setup Embeddings & Generator --------------------
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 doc_embeddings = {
     doc_id: embedder.encode(text, convert_to_tensor=True)
@@ -46,7 +45,7 @@ def rag_chatbot(query):
     context = retrieve_context(query)
     return query_llm(query, context)
 
-# ---------------------------- Streamlit UI ----------------------------
+# -------------------- Streamlit UI --------------------
 st.set_page_config(page_title="Client Retention App", layout="wide")
 st.title("🔄 Client Retention Predictor & 📚 Chatbot Assistant")
 
@@ -64,8 +63,9 @@ with col2:
             sex = st.selectbox("Sex", ['male', 'female'])
             status = st.selectbox("Status", ['new', 'returning', 'inactive'])
             season = st.selectbox("Season", ['Spring', 'Summer', 'Fall', 'Winter'])
-            month = st.selectbox("Month", ['January', 'February', 'March', 'April', 'May', 'June',
-                                           'July', 'August', 'September', 'October', 'November', 'December'])
+            month = st.selectbox("Month", [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'])
             latest_lang_english = st.selectbox("Latest Language is English", ['yes', 'no'])
             age = st.slider("Age", 18, 100, 35)
             dependents_qty = st.number_input("Number of Dependents", 0, 10, 1)
@@ -88,7 +88,6 @@ with col2:
                 'distance_km': distance_km,
                 'num_of_contact_methods': num_of_contact_methods
             }])
-
             prediction = model.predict(input_df)[0]
             probability = model.predict_proba(input_df)[0][1]
 
