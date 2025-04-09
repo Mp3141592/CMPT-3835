@@ -4,7 +4,6 @@ import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
-
 # ---------------------------- Load ML Model ----------------------------
 model = joblib.load("client_retention_model.pkl")
 
