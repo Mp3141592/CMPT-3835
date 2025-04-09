@@ -1,53 +1,3 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import joblib
-import torch
-from sentence_transformers import SentenceTransformer, util
-from transformers import pipeline
-
-# ==========================================
-# Load Chatbot Components
-# ==========================================
-@st.cache_resource
-def load_rag_components():
-    df = pd.read_csv("chatbot_chunks_final.csv")
-    embeddings = np.load("chatbot_embeddings.npy")
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    doc_embeddings = [torch.tensor(embeddings[i]) for i in range(len(df))]
-    llm = pipeline("text2text-generation", model="google/flan-t5-large")
-    return df, embedder, doc_embeddings, llm
-
-# ==========================================
-# Retrieve Context for Chatbot
-# ==========================================
-def retrieve_context(query, embedder, doc_embeddings, docs, top_k=5):
-    query_emb = embedder.encode(query, convert_to_tensor=True)
-    scores = {}
-    for idx, emb in enumerate(doc_embeddings):
-        score = util.pytorch_cos_sim(query_emb, emb).item()
-        scores[idx] = score
-    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return "\n- ".join([f"- {docs['chunk'].iloc[idx]}" for idx, _ in top_docs])
-
-# ==========================================
-# Query FLAN-T5 for Text Generation
-# ==========================================
-def query_llm(query, context, llm):
-    prompt = (
-        "Below are summaries of client data records.\n"
-        "Use the information to answer the user’s question as clearly and insightfully as possible.\n"
-        "If the question is general (e.g., 'what is this dataset about?'), summarize patterns.\n\n"
-        f"Context:\n{context}\n\n"
-        f"Question: {query}\n\n"
-        "Answer:"
-    )
-    output = llm(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
-    return output[0]['generated_text'].replace(prompt, "").strip()
-
-# ==========================================
-# Client Retention Prediction Page
-# ==========================================
 def predictor_page():
     model = joblib.load("client_retention_model.pkl")
     st.subheader("🔄 Client Retention Predictor")
@@ -85,7 +35,7 @@ def predictor_page():
         df_input["household_yes"] = 1 if household == "Yes" else 0
         df_input["sex_new_Male"] = 1 if sex == "Male" else 0
 
-        for col in ['status_Active', 'status_Closed','status_Flagged', 'status_Outreach', 'status_Pending']:
+        for col in ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']:
             df_input[col] = 1 if col == f"status_{status}" else 0
 
         df_input["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
@@ -93,10 +43,20 @@ def predictor_page():
         for col in ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']:
             df_input[col] = 1 if col == f"Season_{season}" else 0
 
-        for col in ['Month_April', 'Month_August','Month_December', 'Month_Febuary', 'Month_January',
+        for col in ['Month_April', 'Month_August', 'Month_December', 'Month_February', 'Month_January',
                     'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
                     'Month_October', 'Month_September']:
             df_input[col] = 1 if col == f"Month_{month}" else 0
+
+        # Ensure all expected columns are present
+        expected_columns = model.named_steps['preprocessor'].get_feature_names_out()
+        missing = set(expected_columns) - set(df_input.columns)
+        if missing:
+            st.error(f"🚨 Missing columns in input: {missing}")
+            return
+
+        # Reindex to match model input
+        df_input = df_input.reindex(columns=expected_columns, fill_value=0)
 
         prediction = model.predict(df_input)[0]
         probs = model.predict_proba(df_input)[0]
@@ -108,43 +68,3 @@ def predictor_page():
             st.warning("⚠️ Client may not return")
         st.info(f"📈 Probability of returning: {probs[1]*100:.2f}%")
         st.info(f"📉 Probability of not returning: {probs[0]*100:.2f}%")
-
-# ==========================================
-# Graphs Page
-# ==========================================
-def graphs_page():
-    st.subheader("📊 Feature Analysis Graphs")
-    st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
-    st.image("Graphs/waterfall.png", caption="SHAP Waterfall Plot", use_container_width=True)
-
-# ==========================================
-# Chatbot Page
-# ==========================================
-def chatbot_page():
-    st.subheader("🤖 Chatbot (Data Q&A)")
-    user_input = st.text_input("Ask your question:")
-
-    if user_input:
-        df, embedder, doc_embeddings, llm = load_rag_components()
-        with st.spinner("Thinking..."):
-            context = retrieve_context(user_input, embedder, doc_embeddings, df)
-            st.markdown("#### 📄 Retrieved Context:")
-            st.info(context)
-            answer = query_llm(user_input, context, llm)
-            st.markdown("#### 💬 Answer:")
-            st.success(answer)
-
-# ==========================================
-# Streamlit Page Selector
-# ==========================================
-st.set_page_config(page_title="Client Retention App", layout="wide")
-st.title("📈 Client Insights & Retention Dashboard")
-
-page = st.sidebar.radio("Navigation", ["Client Retention Predictor", "Feature Analysis Graphs", "Chatbot (Data Q&A)"])
-
-if page == "Client Retention Predictor":
-    predictor_page()
-elif page == "Feature Analysis Graphs":
-    graphs_page()
-elif page == "Chatbot (Data Q&A)":
-    chatbot_page()
