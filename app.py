@@ -14,8 +14,8 @@ model = joblib.load("client_retention_model.pkl")
 # ------------------------------------------------------------------------------
 # Load Data for Chatbot
 # ------------------------------------------------------------------------------
-df_chunks = pd.read_csv("finalfile.csv")
-documents = dict(zip(df_chunks["title"], df_chunks["chunk"]))
+df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")
+documents = dict(zip(df_chunks["chunk"]))
 
 # Embed documents
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
