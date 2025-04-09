@@ -12,7 +12,7 @@ model = joblib.load("client_retention_model.pkl")
 # ------------------------------------------------------------------------------
 # Load Chatbot CSV Content
 # ------------------------------------------------------------------------------
-df_chunks = pd.read_csv("chatbot_chunks_combined (1).csv", header=None)
+df_chunks = pd.read_csv("chatbot_chunks_combined (1).csv")
 df_chunks.columns = ['chunk']  # assign column name if missing
 
 documents = dict(enumerate(df_chunks["chunk"]))
