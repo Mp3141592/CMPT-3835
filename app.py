@@ -9,7 +9,7 @@ model = joblib.load("client_retention_model.pkl")
 
 # Load chatbot data
 df_chunks = pd.read_csv("chatbot_chunks_combined_improve.csv")
-documents = dict(zip(df_chunks["title"], df_chunks["chunk"]))
+documents = dict(zip(df_chunks["title"], df_chunks["Chunk"]))
 
 # Set up embedding and generation models
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
