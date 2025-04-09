@@ -7,7 +7,7 @@ from transformers import pipeline
 from datetime import datetime
 
 # Load the trained model
-model = joblib.load("XGB_model.jlib")
+model = joblib.load("client_retention_model.pkl")
 
 st.title("🔄 Client Retention Predictor")
 
@@ -114,3 +114,4 @@ with col2:
 
     elif page == "Chatbot":
         st.title("Chatbot")
+        # Add your chatbot code here
