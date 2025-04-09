@@ -8,13 +8,8 @@ from transformers import pipeline
 model = joblib.load("client_retention_model.pkl")
 
 # Load chatbot data
-df_chunks = pd.read_csv("chatbot_chunks_combined_improve.csv")
-
-# Display the column names to debug and make sure you have the correct column names
-st.write("Columns in the CSV:", df_chunks.columns)
-
-# Assuming the columns are 'chunk_text' and 'chunk_title'
-documents = dict(zip(df_chunks["chunk_title"], df_chunks["chunk_text"]))
+df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")
+documents = dict(zip(df_chunks["chunk"], df_chunks["chunk"]))  # use chunk as both key and content
 
 # Set up embedding and generation models
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
