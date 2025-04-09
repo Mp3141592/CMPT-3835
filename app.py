@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
-pip install hf_xet
+
 
 # ---------------------------- Load ML Model ----------------------------
 model = joblib.load("client_retention_model.pkl")
