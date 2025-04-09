@@ -5,46 +5,54 @@ import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
-# Load trained model
+# Load the trained model
 model = joblib.load("client_retention_model.pkl")
 
-# Load chatbot documents
+# Load chatbot document chunks
 df_chunks = pd.read_csv("chatbot_chunks_final.csv")
-documents = dict(zip(df_chunks["title"], df_chunks["chunk"]))
 
-# Create embeddings
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+# Handle missing 'title' column gracefully
+if 'title' in df_chunks.columns:
+    documents = dict(zip(df_chunks["title"], df_chunks["chunk"]))
+else:
+    documents = dict(zip(df_chunks.index.astype(str), df_chunks["chunk"]))
+
+# Load embedding model and generator
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
 doc_embeddings = {
-    title: embedder.encode(text, convert_to_tensor=True)
-    for title, text in documents.items()
+    doc_id: embedder.encode(text, convert_to_tensor=True)
+    for doc_id, text in documents.items()
 }
-
-# FLAN-T5 generator
 generator = pipeline("text2text-generation", model="google/flan-t5-large")
 
+# Retrieval function
 def retrieve_context(query, top_k=2):
     query_embedding = embedder.encode(query, convert_to_tensor=True)
     scores = {
-        title: util.pytorch_cos_sim(query_embedding, emb).item()
-        for title, emb in doc_embeddings.items()
+        doc_id: util.pytorch_cos_sim(query_embedding, emb).item()
+        for doc_id, emb in doc_embeddings.items()
     }
-    top_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return "\n\n".join(documents[title] for title, _ in top_docs)
+    top_doc_ids = sorted(scores, key=scores.get, reverse=True)[:top_k]
+    return "\n\n".join(documents[doc_id] for doc_id in top_doc_ids)
 
+# LLM response function
 def query_llm(query, context):
     prompt = (
-        "You have some background info below. Use it to answer the query clearly.\n\n"
+        "You have some background documents below. "
+        "Analyze the context and answer the user’s query clearly.\n\n"
         f"Context:\n{context}\n\n"
-        f"User Query: {query}\n\nAnswer:"
+        f"User Query: {query}\n\n"
+        "Answer:"
     )
-    output = generator(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
-    return output[0]["generated_text"].replace(prompt, "").strip()
+    result = generator(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
+    return result[0]['generated_text'].replace(prompt, "").strip()
 
+# RAG Chatbot
 def rag_chatbot(query):
-    context = retrieve_context(query, top_k=2)
+    context = retrieve_context(query)
     return query_llm(query, context)
 
-# Streamlit App
+# Streamlit App UI
 st.title("🔄 Client Retention Predictor")
 
 col1, col2 = st.columns([1, 4])
@@ -108,9 +116,11 @@ with col2:
         st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
 
     elif page == "Chatbot":
-        st.subheader("📚 Ask About Client Services or Data")
-        user_query = st.text_input("Ask me something based on our records or the charity's mission:")
+        st.subheader("💬 Ask anything about the organization or data")
+        user_query = st.text_input("Enter your question:")
+
         if user_query:
             with st.spinner("Thinking..."):
                 response = rag_chatbot(user_query)
-                st.markdown(f"**Answer:** {response}")
+                st.markdown("**Response:**")
+                st.write(response)
