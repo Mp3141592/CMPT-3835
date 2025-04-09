@@ -14,7 +14,7 @@ model = joblib.load("client_retention_model.pkl")
 # ------------------------------------------------------------------------------
 # Load CSV Chunks for Chatbot
 # ------------------------------------------------------------------------------
-df_chunks = pd.read_csv("chatbot_chunks_combined.csv")  # uses only the 'chunk' column
+df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")  # uses only the 'chunk' column
 documents = dict(enumerate(df_chunks["chunk"]))
 
 # ------------------------------------------------------------------------------
