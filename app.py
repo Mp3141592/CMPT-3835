@@ -9,6 +9,11 @@ model = joblib.load("client_retention_model.pkl")
 
 # Load chatbot data
 df_chunks = pd.read_csv("chatbot_chunks_combined_improve.csv")
+
+# Handle missing 'title' column (fill NaN with a placeholder or use 'chunk' for title)
+df_chunks['title'] = df_chunks['title'].fillna('Title Placeholder')
+
+# Now create the documents dictionary using 'chunk' and 'title'
 documents = dict(zip(df_chunks["title"], df_chunks["chunk"]))
 
 # Set up embedding and generation models
