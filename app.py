@@ -4,25 +4,21 @@ import joblib
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 
-# ------------------------ Load model and chatbot data ------------------------
-
-# Load prediction model
+# -------------------- Load model and chatbot data --------------------
 model = joblib.load("client_retention_model.pkl")
+df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv")
 
-# Load chatbot content, skipping the first placeholder row
-df_chunks = pd.read_csv("chatbot_chunks_combined_improved (version 1).csv", skiprows=1)
-documents = df_chunks
+# Use row index as key and chunk as content
+documents = {str(i): row['chunk'] for i, row in df_chunks.iterrows()}
 
-# Set up embedding and generation models
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
 doc_embeddings = {
     doc_id: embedder.encode(text, convert_to_tensor=True)
     for doc_id, text in documents.items()
 }
 generator = pipeline("text2text-generation", model="google/flan-t5-large")
 
-# ------------------------ Streamlit UI Layout ------------------------
-
+# -------------------- Streamlit UI --------------------
 st.set_page_config(page_title="Client Retention App", layout="wide")
 st.title("🔄 Client Retention Predictor")
 
@@ -31,10 +27,9 @@ with col1:
     page = st.radio("Please select a tab", ("Client Retention Predictor", "Feature Analysis Graphs", "Chatbot"))
 
 with col2:
-
-    # ------------------------ Predictor ------------------------
+    # -------------------- Predictor --------------------
     if page == "Client Retention Predictor":
-        st.subheader("📍 Predict if a client is likely to return")
+        st.subheader("Predict if a client is likely to return")
 
         with st.form("prediction_form"):
             contact_method = st.selectbox("Contact Method", ['phone', 'email', 'in-person'])
@@ -71,13 +66,13 @@ with col2:
             probability = model.predict_proba(input_df)[0][1]
 
             st.markdown("---")
-            st.subheader("🧠 Prediction Result:")
+            st.subheader("Prediction Result:")
             if prediction == 1:
                 st.success(f"✅ Client is likely to return (Probability: {round(probability, 2)})")
             else:
                 st.warning(f"⚠️ Client may not return (Probability: {round(probability, 2)})")
 
-    # ------------------------ Graphs ------------------------
+    # -------------------- Graphs --------------------
     elif page == "Feature Analysis Graphs":
         st.subheader("📊 Feature Importance")
         st.image("Graphs/fiupdate.png", caption="Feature Importance", use_container_width=True)
@@ -85,9 +80,9 @@ with col2:
         st.subheader("📈 Waterfall Prediction Graph")
         st.image("Graphs/waterfall.png", caption="Waterfall Graph", use_container_width=True)
 
-    # ------------------------ Chatbot ------------------------
+    # -------------------- Chatbot --------------------
     elif page == "Chatbot":
-        st.subheader("🤖 Ask the Assistant About the Data or Project")
+        st.subheader("🤖 Ask anything about the project")
 
         def retrieve_context(query, top_k=2):
             query_embedding = embedder.encode(query, convert_to_tensor=True)
@@ -100,7 +95,7 @@ with col2:
 
         def query_llm(query, context):
             prompt = (
-                "You are an assistant analyzing this project data and information.\n\n"
+                "You are an assistant analyzing the following project information.\n\n"
                 f"Context:\n{context}\n\n"
                 f"User Query: {query}\n\n"
                 "Answer:"
@@ -108,10 +103,10 @@ with col2:
             result = generator(prompt, max_new_tokens=150, do_sample=True, temperature=0.7)
             return result[0]['generated_text'].replace(prompt, "").strip()
 
-        user_query = st.text_input("Ask your question:")
-        if user_query:
+        query = st.text_input("Ask your question:")
+        if query:
             with st.spinner("Thinking..."):
-                context = retrieve_context(user_query)
-                response = query_llm(user_query, context)
+                context = retrieve_context(query)
+                response = query_llm(query, context)
                 st.markdown("**Answer:**")
                 st.write(response)
