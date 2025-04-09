@@ -2,11 +2,9 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from sentence_transformers import SentenceTransformer, util
-from transformers import pipeline
 from datetime import datetime
 
-# Load the trained model
+# Load the new pipeline model
 model = joblib.load("client_retention_model.pkl")
 
 st.title("🔄 Client Retention Predictor")
@@ -21,7 +19,7 @@ with col1:
 with col2:
 
     if page == "Client Retention Predictor":
-        
+
         st.write("Predict whether a client is likely to return based on their profile.")
 
         # Step 1: Ask for Season first
@@ -52,36 +50,19 @@ with col2:
                 submitted = st.form_submit_button("Predict")
 
             if submitted:
-                d = {
-                    'age': [age],
-                    'dependents_qty': [dependents_qty],
-                    'distance_km': [distance_km],
-                    'num_of_contact_methods': [num_of_contact_methods]
-                }
-
-                new_data = pd.DataFrame(d)
-
-                # One-hot encodings
-                new_data["household_yes"] = 1 if household == "Yes" else 0
-                new_data["sex_new_Male"] = 1 if sex == "Male" else 0
-
-                status_list = ['status_Active', 'status_Closed', 'status_Flagged', 'status_Outreach', 'status_Pending']
-                for i in status_list:
-                    new_data[i] = 1 if i == f"status_{status}" else 0
-
-                new_data["latest_language_is_english_Yes"] = 1 if latest_lang_english == "Yes" else 0
-
-                season_list = ['Season_Fall', 'Season_Spring', 'Season_Summer', 'Season_Winter']
-                for i in season_list:
-                    new_data[i] = 1 if i == f"Season_{season}" else 0
-
-                month_list = [
-                    'Month_April', 'Month_August', 'Month_December', 'Month_Febuary', 'Month_January',
-                    'Month_July', 'Month_June', 'Month_March', 'Month_May', 'Month_November',
-                    'Month_October', 'Month_September'
-                ]
-                for i in month_list:
-                    new_data[i] = 1 if i == f"Month_{month}" else 0
+                # Pass raw data (no one-hot encoding)
+                new_data = pd.DataFrame([{
+                    'age': age,
+                    'dependents_qty': dependents_qty,
+                    'distance_km': distance_km,
+                    'num_of_contact_methods': num_of_contact_methods,
+                    'household': household,
+                    'sex': sex,
+                    'status': status,
+                    'latest_language_is_english': latest_lang_english,
+                    'Season': season,
+                    'Month': month
+                }])
 
                 # Predict
                 prediction = model.predict(new_data)[0]
@@ -114,4 +95,3 @@ with col2:
 
     elif page == "Chatbot":
         st.title("Chatbot")
-        # Add your chatbot code here
