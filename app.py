@@ -15,7 +15,7 @@ model = joblib.load("client_retention_model.pkl")
 df_chunks = pd.read_csv("chatbot_chunks_combined (1).csv")
 df_chunks.columns = ['chunk']  # assign column name if missing
 
-documents = dict(enumerate(df_chunks["chunk"]))
+documents = df_chunks["chunk"]
 
 # ------------------------------------------------------------------------------
 # Setup Embedding Model
