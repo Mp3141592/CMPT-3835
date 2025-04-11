@@ -29,15 +29,15 @@ the merged datasets. To do so, we used an extreme gardient boost model (XGB).
 
 The repository contains the following files:
 
-finalfile.csv: Encoded file containing information.
-app.py: A streamlit app programmed using python to allow users to make predictions with the model. Includes a chatbot to give insight into the data itself and
-graphs to help explain the choices made by the model and team.
-requirements.txt: Contains the libraries needed to run the jypter file and app.
-Graphs: Folder containing a feature importance plot and a waterfall graph for predictions.
-README.md: The file you are currently reading to learn about the project.
-Work_Integrated_2_Project: Notebook containing most of the teams work (EDA, cleaning, processing, modeling, etc)
-chatbot_chunks(various): Files used by the chatbot to work properly
-client_retention_model: The model created off of training data.
+<p>finalfile.csv: Encoded file containing information.</p>
+<p>app.py: A streamlit app programmed using python to allow users to make predictions with the model. Includes a chatbot to give insight into the data itself and
+graphs to help explain the choices made by the model and team.</p>
+<p>requirements.txt: Contains the libraries needed to run the jypter file and app.</p>
+<p>Graphs: Folder containing a feature importance plot and a waterfall graph for predictions.</p>
+<p>README.md: The file you are currently reading to learn about the project.</p>
+<p>Work_Integrated_2_Project: Notebook containing most of the teams work (EDA, cleaning, processing, modeling, etc).</p>
+<p>chatbot_chunks(various): Files used by the chatbot to work properly.</p>
+<p>client_retention_model: The model created off of training data.</p>
 
 ### Getting Started
 
