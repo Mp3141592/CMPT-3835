@@ -23,7 +23,7 @@ How can we learn if a client will return or not within a given period of time?
 ### Solution
 
 We propose making a machine learning model that can predict whether or not a client will return based off key features taken from 
-the merged datasets. To do so, we used an extreme gardient boost model (XGB). 
+the merged datasets. To do so, we used an extreme gradient boost model (XGB). 
 
 ### Repository Structure
 
