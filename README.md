@@ -53,8 +53,8 @@ Alternatively, open the notebook in google colab.
 
 Our team consists of the following members:
 
-McLaren Packard: www.linkedin.com/in/mclaren-p-094aa325a
-Spandan
-Geetikia
-Rohit
-Jatin
+<p>McLaren Packard: www.linkedin.com/in/mclaren-p-094aa325a</p>
+<p>Spandan</p>
+<p>Geetikia</p>
+<p>Rohit</p>
+<p>Jatin</p>
