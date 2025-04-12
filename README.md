@@ -55,6 +55,6 @@ Our team consists of the following members:
 
 <p>McLaren Packard: www.linkedin.com/in/mclaren-p-094aa325a</p>
 <p>Spandan: https://www.linkedin.com/in/spandan-dahal-6747962a4/</p>
-<p>Geetikia</p>
+<p>Geetikia</p> https://www.linkedin.com/in/geetika-bhatia-ab12182a5/
 <p>Rohit: https://www.linkedin.com/in/rohit-rohit-97021128b/</p>
 <p>Jatin: https://www.linkedin.com/in/jatin-dandyan-6831692a5/</p>
