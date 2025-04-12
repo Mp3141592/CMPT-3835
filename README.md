@@ -54,7 +54,7 @@ Alternatively, open the notebook in google colab.
 Our team consists of the following members:
 
 <p>McLaren Packard: www.linkedin.com/in/mclaren-p-094aa325a</p>
-<p>Spandan</p>
+<p>Spandan: https://www.linkedin.com/in/spandan-dahal-6747962a4/</p>
 <p>Geetikia</p>
-<p>Rohit</p>
-<p>Jatin</p>
+<p>Rohit: https://www.linkedin.com/in/rohit-rohit-97021128b/</p>
+<p>Jatin: https://www.linkedin.com/in/jatin-dandyan-6831692a5/</p>
